@@ -1,0 +1,17 @@
+{
+    "name": "Voxelis",
+    "references": [
+        "GUID:ea6a6314f279f814facc8c48a7d3c9f1",
+        "GUID:b8e24fd1eb19b4226afebb2810e3c19b",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
