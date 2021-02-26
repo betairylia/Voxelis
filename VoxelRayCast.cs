@@ -9,7 +9,7 @@ using Voxelis;
 [RequireComponent(typeof(Camera))]
 public class VoxelRayCast : MonoBehaviour
 {
-    public Transform pointed, next;
+    public Transform pointed;
     public World world;
 
     public uint handblock;
@@ -77,10 +77,8 @@ public class VoxelRayCast : MonoBehaviour
             {
                 dirc = Vector3Int.RoundToInt(info.normal);
                 pointed.gameObject.SetActive(true);
-                //next.gameObject.SetActive(true);
                 pointed.position = hit;
                 pointed.rotation = Quaternion.identity;
-                //next.position = hit + dirc;
 
                 HandleInputs();
             }
@@ -91,7 +89,6 @@ public class VoxelRayCast : MonoBehaviour
         else
         {
             pointed.gameObject.SetActive(false);
-            //next.gameObject.SetActive(false);
         }
 #if PROFILE
         UnityEngine.Profiling.Profiler.EndSample();
