@@ -271,9 +271,14 @@ namespace Voxelis
             {
                 // Get renderable size
                 uint vCount = 0;
+                uint fsCount = 0;
                 foreach (var r in renderables)
                 {
                     vCount += r.GetVertCount();
+                    if(r is ChunkRenderer_GPUGeometry_Raymarch)
+                    {
+                        fsCount += (uint)((r as ChunkRenderer_GPUGeometry_Raymarch).fsBufSize);
+                    }
                 }
 
                 uint bexCount = 0;
@@ -288,6 +293,7 @@ namespace Voxelis
                     $"   BEx:   {bexCount}\n" +
                     $"Rendered: {renderables.Count} ({(vCount / 1024.0f) * System.Runtime.InteropServices.Marshal.SizeOf(typeof(ChunkRenderer_GPUComputeMesh.Vertex)) / 1024.0f} MB)\n" +
                     $"          {vCount} verts\n" +
+                    $"  - FS16: {fsCount} ({fsCount * 8 / 1024} MB)\n" +
                     $"\n" +
                     $"@ {(int)follows.position.x}, {(int)follows.position.y}, {(int)follows.position.z}\n" +
                     $"\n" +

@@ -11,7 +11,8 @@ namespace Voxelis.Rendering
 
         uint[] blkEx_tmpBuf;
         ushort[] tex3D_tmpBuf;
-        int fsBufSize, fsBufRowlen = 16;
+        public int fsBufSize { get; protected set; }
+        int fsBufRowlen = 32;
 
         public struct Vertex_GR
         {
@@ -34,16 +35,16 @@ namespace Voxelis.Rendering
             {
                 // TODO: variable
                 fsBufSize = chunk.blockExtrasDict.Count;
-                int maxFSs = 1024;
+                int maxFSs = 4096;
                 if(fsBufSize > maxFSs)
                 {
                     Debug.LogError($"Too many FS's !! ({fsBufSize} in Chunk {chunk.positionOffset / 32})");
                     fsBufSize = maxFSs;
                 }
-                fsBufSize = Mathf.CeilToInt(chunk.blockExtrasDict.Count / 16.0f) * 16;
+                fsBufSize = Mathf.CeilToInt(chunk.blockExtrasDict.Count / (float)fsBufRowlen) * fsBufRowlen;
 
-                //fineStructure16_tex3D = new Texture3D(16 * (fsBufSize / fsBufRowlen), 16 * fsBufRowlen, 16, TextureFormat.R16, false);
-                fineStructure16_tex3D = new Texture3D(16 * (fsBufSize / fsBufRowlen), 16 * fsBufRowlen, 16, TextureFormat.Alpha8, false);
+                fineStructure16_tex3D = new Texture3D(16 * (fsBufSize / fsBufRowlen), 16 * fsBufRowlen, 16, TextureFormat.R16, false);
+                //fineStructure16_tex3D = new Texture3D(16 * (fsBufSize / fsBufRowlen), 16 * fsBufRowlen, 16, TextureFormat.Alpha8, false);
                 fineStructure16_tex3D.filterMode = FilterMode.Point;
                 fineStructure16_tex3D.wrapMode = TextureWrapMode.Clamp;
 
@@ -82,7 +83,7 @@ namespace Voxelis.Rendering
                     int flatten_ix = pos.x * Chunk.SideLength * Chunk.SideLength + pos.y * Chunk.SideLength + pos.z;
                     blkEx_tmpBuf[flatten_ix] = bexCount | 0x80000000;
 
-                    Vector3Int origin = new Vector3Int((int)bexCount / 16, (int)bexCount % 16, 0) * 16;
+                    Vector3Int origin = new Vector3Int((int)bexCount / fsBufRowlen, (int)bexCount % fsBufRowlen, 0) * 16;
 
                     // Upload texture
                     // TODO: block update ... pixel-wise gotta SLOWWWW
@@ -92,9 +93,10 @@ namespace Voxelis.Rendering
                         {
                             for(int z = 0; z < 16; z++)
                             {
-                                //int ix = (origin.x + x) * fsBufRowlen * 16 + (origin.y + y) + (origin.z + z);
-                                //tex3D_tmpBuf[ix] = (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z];
-                                fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color(0, 0, 0, (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z]));
+                                //int ix = (origin.x + x) * fsBufRowlen * 16 * 16 + (origin.y + y) * 16 + (origin.z + z);
+                                int ix = (origin.x + x) + (origin.y + y) * 16 * (fsBufSize / fsBufRowlen) + (origin.z + z) * fsBufSize * 16 * 16;
+                                tex3D_tmpBuf[ix] = (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z];
+                                //fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color(0, 0, 0, (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z]));
                             }
                         }
                     }
@@ -104,14 +106,14 @@ namespace Voxelis.Rendering
                     if(bexCount > fsBufSize) { break; }
                 }
 
-                //fineStructure16_tex3D.SetPixelData(tex3D_tmpBuf, 0);
+                fineStructure16_tex3D.SetPixelData(tex3D_tmpBuf, 0);
                 fineStructure16_tex3D.Apply();
                 blockExtraPointers_buffer.SetData(blkEx_tmpBuf);
 
                 // Assign to material
                 matProp.SetTexture("_FSTex", fineStructure16_tex3D);
                 matProp.SetFloat("blockSize", chunk.blockSize);
-                matProp.SetVector("FStexGridSize", new Vector3(1.0f / (fsBufSize / 16), 1.0f / fsBufRowlen, 1.0f));
+                matProp.SetVector("FStexGridSize", new Vector3(1.0f / (fsBufSize / fsBufRowlen), 1.0f / fsBufRowlen, 1.0f));
             }
 
             #endregion

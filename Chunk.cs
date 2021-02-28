@@ -125,16 +125,16 @@ namespace Voxelis
             // DEBUG
             //if(blockExtrasDict.Count == 0)
             //{
-                def = Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blk.id];
+            def = Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blk.id];
 
-                if (def != null)
+            if (def != null)
+            {
+                // Create BlockExtras
+                if (def.hasExtraData)
                 {
-                    // Create BlockExtras
-                    if (def.hasExtraData)
-                    {
-                        blockExtrasDict.Add(new Vector3Int(x, y, z), (BlockEntityBase)System.Activator.CreateInstance(Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blk.id].extraDataType));
-                    }
+                    blockExtrasDict.Add(new Vector3Int(x, y, z), (BlockEntityBase)System.Activator.CreateInstance(Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blk.id].extraDataType, null, new Vector3Int(x, y, z), blk));
                 }
+            }
             //}
         }
 

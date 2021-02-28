@@ -67,5 +67,17 @@ namespace Voxelis
     }
 
     // TODO: Implement this
-    public abstract class BlockEntityBase {}
+    public abstract class BlockEntityBase 
+    {
+        public BlockGroup group;
+        public Vector3Int pos;
+        public Block block;
+
+        public BlockEntityBase(BlockGroup group, Vector3Int pos, Block block)
+        {
+            this.group = group;
+            this.pos = pos;
+            this.block = block;
+        }
+    }
 }

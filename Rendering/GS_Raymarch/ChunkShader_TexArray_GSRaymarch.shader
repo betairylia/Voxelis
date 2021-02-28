@@ -175,7 +175,7 @@
                 // Initial fetch
                 //float v = floor(tex3D(_FSTex, origin + size * p) * 65536);
                 //float v = floor(tex3D(_FSTex, origin + float3(0.0001, 0.0001, 0.0001)).a * 65536);
-                float v = tex3D(_FSTex, origin + p * size).a;
+                uint v = asuint(tex3D(_FSTex, origin + p * size).r);
                 //float v = (length(p - float3(0.5, 0.5, 0.5)) - 0.3);
 
                 // Continue only when grid empty
@@ -197,7 +197,7 @@
                     }
 
                     //v = floor(tex3D(_FSTex, origin + size * p).a * 65536);
-                    v = tex3D(_FSTex, origin + p * size).a;
+                    v = asuint(tex3D(_FSTex, origin + p * size).r);
                     //v = v = (length(p - float3(0.5, 0.5, 0.5)) - 0.3);
 
                     if (v > 0)
