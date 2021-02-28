@@ -9,9 +9,14 @@ namespace Voxelis
 {
     public class Chunk : IDisposable
     {
+        public const int SideLength = 32;
+        public float blockSize = 1.0f;
+
         // Data arrays
-        public Unity.Collections.NativeArray<Block> blockData = new Unity.Collections.NativeArray<Block>(32768, Unity.Collections.Allocator.Persistent); 
+        public Unity.Collections.NativeArray<Block> blockData = new Unity.Collections.NativeArray<Block>(32768, Unity.Collections.Allocator.Persistent);
         //public Unity.Collections.NativeArray<EnviormentBlock> envData = new Unity.Collections.NativeArray<EnviormentBlock>(32768, Unity.Collections.Allocator.Persistent);
+
+        public Dictionary<Vector3Int, BlockEntityBase> blockExtrasDict = new Dictionary<Vector3Int, BlockEntityBase>();
 
         public Vector3Int positionOffset;
 
@@ -104,7 +109,33 @@ namespace Voxelis
             {
                 Debug.LogError("!");
             }
+
+            // Delete BlockExtras if any
+            Voxelis.Data.BlockDefinition def = Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blockData[x * 32 * 32 + y * 32 + z].id];
+            if(def != null)
+            {
+                if (def.hasExtraData)
+                {
+                    blockExtrasDict.Remove(new Vector3Int(x, y, z));
+                }
+            }
+
             blockData[x * 32 * 32 + y * 32 + z] = blk;
+
+            // DEBUG
+            //if(blockExtrasDict.Count == 0)
+            //{
+                def = Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blk.id];
+
+                if (def != null)
+                {
+                    // Create BlockExtras
+                    if (def.hasExtraData)
+                    {
+                        blockExtrasDict.Add(new Vector3Int(x, y, z), (BlockEntityBase)System.Activator.CreateInstance(Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.blockDefinitions[blk.id].extraDataType));
+                    }
+                }
+            //}
         }
 
         public Block GetBlock(int x, int y, int z)

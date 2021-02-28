@@ -15,6 +15,8 @@ namespace Voxelis
         [Inherits(typeof(ChunkRenderableBase))]
         public TypeReference rendererType;
 
+        public Data.BlockRegistryTable blockRegistryTable;
+
         //public static VoxelisGlobalSettings GetOrCreateSettings()
         //{
         //    var settings = AssetDatabase.LoadAssetAtPath<VoxelisGlobalSettings>(k_SettingsPath);

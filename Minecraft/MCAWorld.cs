@@ -33,12 +33,12 @@ namespace Voxelis.Minecraft
 #endif
             // Single-threaded
             MCALoaderChunkGeneratorJob pastJob = serialJob;
-            serialJob = new MCALoaderChunkGeneratorJob(m_MCAWorld, MCAPath, x, worldHeight, z, column);
+            serialJob = new MCALoaderChunkGeneratorJob(true, m_MCAWorld, MCAPath, x, worldHeight, z, column);
             if(pastJob != null)
             {
                 serialJob.Depends(pastJob);
             }
-            CustomJobs.CustomJob.TryAddJob(serialJob);
+            CustomJobs.CustomJob.TryAddJob(serialJob, (job)=> { if (job == serialJob) { serialJob = null; } });
 #if PROFILE
             UnityEngine.Profiling.Profiler.EndSample();
 #endif
@@ -67,6 +67,7 @@ namespace Voxelis.Minecraft
         // Modified from World.cs
         protected override IEnumerator BuildTasks()
         {
+            if(m_MCAWorld == null) { yield break; }
             Vector3Int currentChunk = new Vector3Int((int)(follows.position.x / 32), 0, (int)(follows.position.z / 32));
             int range = Mathf.CeilToInt(showDistance * 1.5f / 32.0f);
 

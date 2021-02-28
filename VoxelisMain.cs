@@ -24,6 +24,9 @@ namespace Voxelis
             GeometryIndependentPass.cs_generation = cs_generation;
             GeometryIndependentPass.cs_generation_batchsize = cs_generation_batchsize;
             GeometryIndependentPass.Init();
+
+            chunkMat.SetTexture("_MainTexArr", globalSettings.blockRegistryTable.BlockTexArray);
+            chunkMat.SetTexture("_BlockLUT", globalSettings.blockRegistryTable.BlockLUT);
         }
 
         // Use this for initialization

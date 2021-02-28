@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Voxelis.Rendering
 {
-    public class ChunkRenderer : ChunkRenderableBase
+    public class ChunkRenderer_GPUComputeMesh : ChunkRenderableBase
     {
         public static ComputeShader cs_chunkMeshPopulator;
         public static Material chunkMat;
@@ -13,10 +13,10 @@ namespace Voxelis.Rendering
         public ComputeBuffer buffer, buffer_bak, indBuffer, inputBuffer;
         public MaterialPropertyBlock matProp;
 
-        bool waiting = false;
+        protected bool waiting = false;
 
-        uint[] _ind;
-        public uint vCount { get; private set; }
+        protected uint[] _ind;
+        public uint vCount { get; protected set; }
 
         protected Vector3Int myPos;
 
@@ -31,7 +31,7 @@ namespace Voxelis.Rendering
         }
 
         // Start is called before the first frame update
-        public ChunkRenderer()
+        public ChunkRenderer_GPUComputeMesh()
         {
             populated = false;
             vCount = 0;
@@ -204,7 +204,7 @@ namespace Voxelis.Rendering
             return chunk;
         }
 
-        ~ChunkRenderer()
+        ~ChunkRenderer_GPUComputeMesh()
         {
             Clean();
             if (chunk != null)

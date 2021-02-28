@@ -18,10 +18,10 @@ public class GPUDispatchManager
         }
     }
 
-    private LinkedList<KeyValuePair<UnityEngine.Rendering.GraphicsFence, LinkedList<ChunkRenderer>>> fenceCBs;
+    private LinkedList<KeyValuePair<UnityEngine.Rendering.GraphicsFence, LinkedList<ChunkRenderer_GPUComputeMesh>>> fenceCBs;
     private int maxTasksInFence;
 
-    private LinkedList<ChunkRenderer> tmp;
+    private LinkedList<ChunkRenderer_GPUComputeMesh> tmp;
     private int currentTasksCount;
 
     private bool rubbish = false;
@@ -40,13 +40,13 @@ public class GPUDispatchManager
             rubbish = true;
         }
 
-        fenceCBs = new LinkedList<KeyValuePair<UnityEngine.Rendering.GraphicsFence, LinkedList<ChunkRenderer>>>();
+        fenceCBs = new LinkedList<KeyValuePair<UnityEngine.Rendering.GraphicsFence, LinkedList<ChunkRenderer_GPUComputeMesh>>>();
         this.maxTasksInFence = maxTasksInFence;
         
         ResetQueue();
     }
 
-    public void AppendTask(ChunkRenderer r)
+    public void AppendTask(ChunkRenderer_GPUComputeMesh r)
     {
         tmp.AddLast(r);
         currentTasksCount += 1;
@@ -63,7 +63,7 @@ public class GPUDispatchManager
 
         // Create GPU Fence
         UnityEngine.Rendering.GraphicsFence fence = Graphics.CreateAsyncGraphicsFence();
-        fenceCBs.AddLast(new KeyValuePair<UnityEngine.Rendering.GraphicsFence, LinkedList<ChunkRenderer>>(fence, tmp));
+        fenceCBs.AddLast(new KeyValuePair<UnityEngine.Rendering.GraphicsFence, LinkedList<ChunkRenderer_GPUComputeMesh>>(fence, tmp));
 
         ResetQueue();
     }
@@ -99,7 +99,7 @@ public class GPUDispatchManager
 
     private void ResetQueue()
     {
-        tmp = new LinkedList<ChunkRenderer>();
+        tmp = new LinkedList<ChunkRenderer_GPUComputeMesh>();
         currentTasksCount = 0;
     }
 }

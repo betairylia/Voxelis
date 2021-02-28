@@ -74,8 +74,8 @@ namespace Voxelis
         {
             base.Start();
 
-            ChunkRenderer.cs_chunkMeshPopulator = cs_chunkMeshPopulator;
-            ChunkRenderer.chunkMat = chunkMat;
+            ChunkRenderer_GPUComputeMesh.cs_chunkMeshPopulator = cs_chunkMeshPopulator;
+            ChunkRenderer_GPUComputeMesh.chunkMat = chunkMat;
 
             SetWorld();
         }
@@ -276,10 +276,17 @@ namespace Voxelis
                     vCount += r.GetVertCount();
                 }
 
+                uint bexCount = 0;
+                foreach (var chk in chunks.Values)
+                {
+                    bexCount += (uint)chk.blockExtrasDict.Count;
+                }
+
                 debugText.text = $"" +
                     $"CHUNKS:\n" +
                     $"Loaded:   {chunks.Count} ({chunks.Count * sizeof(uint) * 32 / 1024} MB)\n" +
-                    $"Rendered: {renderables.Count} ({(vCount / 1024.0f) * System.Runtime.InteropServices.Marshal.SizeOf(typeof(ChunkRenderer.Vertex)) / 1024.0f} MB)\n" +
+                    $"   BEx:   {bexCount}\n" +
+                    $"Rendered: {renderables.Count} ({(vCount / 1024.0f) * System.Runtime.InteropServices.Marshal.SizeOf(typeof(ChunkRenderer_GPUComputeMesh.Vertex)) / 1024.0f} MB)\n" +
                     $"          {vCount} verts\n" +
                     $"\n" +
                     $"@ {(int)follows.position.x}, {(int)follows.position.y}, {(int)follows.position.z}\n" +

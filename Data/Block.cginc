@@ -29,7 +29,8 @@ bool IsSolidBlock(Block b)
 // Should we cull faces neighboring Block b ?
 bool IsSolidRenderingBlock(Block b)
 {
-    return IsSolidBlock(b);
+    uint id = GetBlockID(b);
+    return (id > 0 && id != 18 && id != 161 && id != 31);
 }
 
 // Currently same as above

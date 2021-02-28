@@ -12,6 +12,7 @@ namespace Voxelis.Minecraft
     // see https://qiita.com/tatsunoru/items/611d0378086dc5986249
     public struct MCALoaderChunkGeneratorJobWrapper : IJob
     {
+        public bool useID;
         public int cx, cz, cySize;
         public GCHandle<List<Chunk>> chunks;
         public GCHandle<Matryoshka.Utils.PerThreadPool<IChunkManager>> cmPoolHolder;
@@ -93,15 +94,18 @@ namespace Voxelis.Minecraft
 
                                 if (cbk != 0)
                                 { 
-                                    chunk.blockData[ix] = Block.From32bitColor(cbk);
+                                    chunk.SetBlock(pos.x + mc_cx * 16, pos.y, pos.z + mc_cz * 16, Block.From32bitColor(cbk));
                                 }
                                 else
                                 {
-                                    chunk.blockData[ix] = Block.Empty;
+                                    chunk.SetBlock(pos.x + mc_cx * 16, pos.y, pos.z + mc_cz * 16, Block.Empty);
+                                }
+
+                                if(useID)
+                                {
+                                    chunk.SetBlock(pos.x + mc_cx * 16, pos.y, pos.z + mc_cz * 16, new Block() { id = (ushort)blk.ID, meta = chunk.blockData[ix].meta });
                                 }
                             }
-
-                            chunk._PopulateFinish();
                         }
                     }
                 }
@@ -112,12 +116,14 @@ namespace Voxelis.Minecraft
     public class MCALoaderChunkGeneratorJob : CustomJobs.MultipleChunkJob
     {
         int x, ySize, z;
+        bool useID;
         MCALoaderChunkGeneratorJobWrapper job;
         public static Matryoshka.Utils.PerThreadPool<IChunkManager> cmPool;
         //NbtWorld nbtWorld;
 
-        public MCALoaderChunkGeneratorJob(NbtWorld nbtWorld, string savePath, int x, int ySize, int z, List<Chunk> chunksFromYBottomToTop) : base(chunksFromYBottomToTop)
+        public MCALoaderChunkGeneratorJob(bool useID, NbtWorld nbtWorld, string savePath, int x, int ySize, int z, List<Chunk> chunksFromYBottomToTop) : base(chunksFromYBottomToTop)
         {
+            this.useID = useID;
             this.x = x;
             this.ySize = ySize;
             this.z = z;
@@ -142,6 +148,7 @@ namespace Voxelis.Minecraft
         {
             job = new MCALoaderChunkGeneratorJobWrapper()
             {
+                useID = this.useID,
                 cx = x,
                 cySize = ySize,
                 cz = z
@@ -157,6 +164,11 @@ namespace Voxelis.Minecraft
         protected override void OnFinish()
         {
             base.OnFinish();
+
+            foreach (var chunk in chunks)
+            {
+                chunk._PopulateFinish();
+            }
 
             job.chunks.Dispose();
             job.cmPoolHolder.Dispose();

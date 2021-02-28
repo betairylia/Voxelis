@@ -105,5 +105,9 @@ public class VoxelRayCast : MonoBehaviour
         {
             world.SetBlock(hit + dirc, Block.From32bitColor(handblock));
         }
+        if (Input.GetMouseButtonDown(2))
+        {
+            Debug.Log($"Block: {world.GetBlock(hit)}");
+        }
     }
 }
