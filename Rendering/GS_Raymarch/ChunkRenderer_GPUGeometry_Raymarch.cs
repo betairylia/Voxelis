@@ -96,7 +96,7 @@ namespace Voxelis.Rendering
                                 //int ix = (origin.x + x) * fsBufRowlen * 16 * 16 + (origin.y + y) * 16 + (origin.z + z);
                                 int ix = (origin.x + x) + (origin.y + y) * 16 * (fsBufSize / fsBufRowlen) + (origin.z + z) * fsBufSize * 16 * 16;
                                 tex3D_tmpBuf[ix] = (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z];
-                                //fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color(0, 0, 0, (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z]));
+                                //fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color((bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z] / 65536.0f, 0, 0));
                             }
                         }
                     }

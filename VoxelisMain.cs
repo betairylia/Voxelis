@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Voxelis.Rendering;
 using Voxelis.WorldGen;
 
 namespace Voxelis
@@ -27,6 +28,9 @@ namespace Voxelis
 
             chunkMat.SetTexture("_MainTexArr", globalSettings.blockRegistryTable.BlockTexArray);
             chunkMat.SetTexture("_BlockLUT", globalSettings.blockRegistryTable.BlockLUT);
+
+            ChunkRenderer_GPUComputeMesh.cs_chunkMeshPopulator = cs_chunkMeshPopulator;
+            ChunkRenderer_GPUComputeMesh.chunkMat = chunkMat;
         }
 
         // Use this for initialization

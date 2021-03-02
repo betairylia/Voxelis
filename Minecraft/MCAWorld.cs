@@ -47,6 +47,13 @@ namespace Voxelis.Minecraft
 #endif
         }
 
+        protected override void Update()
+        {
+            base.Update();
+
+            if(CustomJobs.CustomJob.scheduledJobs.Count < 1) { serialJob = null; }
+        }
+
         protected override void SetWorld()
         {
             // Open MCA world

@@ -31,6 +31,7 @@
         struct appdata
         {
             float4 vertex : POSITION;
+            //float4 tangent : TANGENT;
             float3 normal : NORMAL;
             fixed4 color : COLOR;
             float2 texcoord : TEXCOORD0;
@@ -82,6 +83,7 @@
 #ifdef SHADER_API_D3D11
             v.vertex = float4(cs_vbuffer[v.vid].position, 1.0f);// +float4(2.5f * sin(_Time.x * 5.0 + cs_vbuffer[v.vid].position.x * 0.3f + cs_vbuffer[v.vid].position.y * 0.15f - cs_vbuffer[v.vid].position.z * 1.3f), 0, 0, 0);
             v.normal = cs_vbuffer[v.vid].normal;
+            //v.tangent = float4(1, 0, 0, 0);
             o.blockSpacePos = float3(
                 (cs_vbuffer[v.vid].block_vert_info & 4) / 4, 
                 (cs_vbuffer[v.vid].block_vert_info & 2) / 2,
@@ -157,57 +159,70 @@
 
                 // size in tex3D
                 float3 size = FStexGridSize;
-                float3 step = size / 16.0f; // Fixed for FS16
 
                 // Ray position
-                float3 p = IN.blockSpacePos;
+                float3 p0 = IN.blockSpacePos * 16.0f;
+                float3 p = p0;
 
                 // Ray direction
                 //float3 d = mul((float3x3)_WorldToLocal, -IN.viewDir) * step;
-                float3 d = -IN.viewDir / 16.0f;
-                float3 absd = abs(d);
+                float3 d = -IN.viewDir;
+                float t = 0; // Distance traveled along the ray
+                
+                // Output surface normal
+                float3 normal;
 
-                int3 dirSign;
+                // Save current sampled voxel data
+                uint v;
+
+                int4 dirSign;
                 dirSign.x = d.x < 0 ? -1 : 1;
                 dirSign.y = d.y < 0 ? -1 : 1;
                 dirSign.z = d.z < 0 ? -1 : 1;
-
-                // Initial fetch
-                //float v = floor(tex3D(_FSTex, origin + size * p) * 65536);
-                //float v = floor(tex3D(_FSTex, origin + float3(0.0001, 0.0001, 0.0001)).a * 65536);
-                uint v = asuint(tex3D(_FSTex, origin + p * size).r);
-                //float v = (length(p - float3(0.5, 0.5, 0.5)) - 0.3);
+                dirSign.w = 0;
 
                 // Continue only when grid empty
                 int i;
-                /*if (v > 0) { o.Albedo = float3(0, 1, 0); }
-                else { o.Albedo = float3(1, 0, 0); }*/
                 o.Albedo = float3(0, 0, 1);
-                for(i = 0; i < 64; i++)
+                for(i = 0; i < 100; i++)
                 {
                     // Step ray
-                    p += d / 1.732f; // lol
+                    p = p0 + d * t;
 
                     // Ray has left voxel
                     //if (any(p > float3(1.02, 1.02, 1.02)) || any(p < float3(-0.02, -0.02, -0.02)))
-                    if (any(p > float3(1,1,1)) || any(p < float3(0,0,0)))
+                    if (any(p > float3(16.1,16.1,16.1)) || any(p < float3(-0.1, -0.1, -0.1)))
                     {
+                        //o.Albedo = float3(i / 64.0, 0, 0);
                         clip(-1.0);
                         break;
                     }
 
-                    //v = floor(tex3D(_FSTex, origin + size * p).a * 65536);
-                    v = asuint(tex3D(_FSTex, origin + p * size).r);
-                    //v = v = (length(p - float3(0.5, 0.5, 0.5)) - 0.3);
+                    // BlockID
+                    // Pos
+                    int3 p_voxel = trunc(p);
+                    p_voxel = clamp(p_voxel, 0, 15);
+                    v = asuint(tex3Dlod(_FSTex, float4(origin + (p_voxel + float3(0.5,0.5,0.5)) / 16.0f * size, 0)).r);
 
                     if (v > 0)
                     {
-                        o.Albedo = float3(0, 1, 0);
+                        o.Albedo = float3(0, i / 64.0, 0);
+                        normal = abs(p - round(p));
                         break;
                     }
+
+                    // Step advancement
+                    float3 deltas = (step(0, d) - frac(p)) / d;
+                    t += max(min(min(deltas.x, deltas.y), deltas.z), 0.001);
                 }
 
                 ////////////////////// Raymarch Done //////////////////////
+
+                // Retrieve normal, depth etc.
+                o.Albedo = float3(0, 1, 0);
+                /*if (normal.x < 0.001) { o.Normal = dirSign.xww; }
+                if (normal.y < 0.001) { o.Normal = dirSign.wyw; }
+                if (normal.z < 0.001) { o.Normal = dirSign.wwz; }*/
 
                 //o.Albedo = IN.blockSpacePos;
                 o.Metallic = _Metallic;

@@ -62,6 +62,7 @@ namespace Voxelis
         public Matryoshka.MatryoshkaGraph[] structureGraphs = new Matryoshka.MatryoshkaGraph[8];
 
         public bool isMainWorld = false;
+        protected bool loadFreezed = false;
 
         [Inherits(typeof(ChunkGenerator))]
         public TypeReference generatorType;
@@ -74,8 +75,58 @@ namespace Voxelis
         {
             base.Start();
 
-            ChunkRenderer_GPUComputeMesh.cs_chunkMeshPopulator = cs_chunkMeshPopulator;
-            ChunkRenderer_GPUComputeMesh.chunkMat = chunkMat;
+            //ChunkRenderer_GPUComputeMesh.cs_chunkMeshPopulator = cs_chunkMeshPopulator;
+            //ChunkRenderer_GPUComputeMesh.chunkMat = chunkMat;
+
+            // Time test
+            var watch = new System.Diagnostics.Stopwatch();
+            int count = 1024;
+
+            watch.Start();
+            for(int i = 0; i < count; i++)
+            {
+                var test1 = new Unity.Collections.NativeArray<Block>(32768, Unity.Collections.Allocator.Persistent);
+                
+                for(int j = 0; j < 32768; j++)
+                {
+                    var b = test1[j];
+                    if(b.id != 0 || b.meta != 0) { Debug.LogError("BAD VALUE"); };
+                }
+            }
+            watch.Stop();
+            Debug.Log($"NativeArray<Block>: {watch.ElapsedMilliseconds} ms");
+
+            watch.Restart();
+            for (int i = 0; i < count; i++)
+            {
+                var test1 = new Unity.Collections.NativeArray<uint>(32768, Unity.Collections.Allocator.Persistent);
+                test1[0] = 0;
+            }
+            watch.Stop();
+            Debug.Log($"NativeArray<uint>: {watch.ElapsedMilliseconds} ms");
+
+            watch.Restart();
+            for (int i = 0; i < count; i++)
+            {
+                var test1 = new uint[32768];
+                test1[0] = 0;
+            }
+            watch.Stop();
+            Debug.Log($"uint[]: {watch.ElapsedMilliseconds} ms");
+
+            watch.Restart();
+            for (int i = 0; i < count; i++)
+            {
+                var test1 = new Block[32768];
+
+                for (int j = 0; j < 32768; j++)
+                {
+                    var b = test1[j];
+                    if (b.id != 0 || b.meta != 0) { Debug.LogError("BAD VALUE"); };
+                }
+            }
+            watch.Stop();
+            Debug.Log($"Block[]: {watch.ElapsedMilliseconds} ms");
 
             SetWorld();
         }
@@ -310,7 +361,9 @@ namespace Voxelis
                     $"{_worldUpdateStageStr[(int)currentWorldUpdateStage]}\n" +
                     $"{Matryoshka.Utils.NoisePools.OS2S_FBm_3oct_f1.instances.Count}\n" +
                     $"\n" +
-                    $"[C] - Toggle freeview";
+                    $"[C] - Toggle freeview\n" +
+                    $"[V] - Freeze current world\n" +
+                    $"     (Current = {(loadFreezed ? "FREEZE" : "LOAD")})";
             }
 
             // Forced fence placement
@@ -329,6 +382,10 @@ namespace Voxelis
                 );
             }
 
+            if(Input.GetKeyDown(KeyCode.V))
+            {
+                loadFreezed = !loadFreezed;
+            }
         }
 
         float avgFPS = 0;
@@ -355,6 +412,14 @@ namespace Voxelis
             }
 
             return null;
+        }
+
+        public override void StartWorldUpdateSingleLoop()
+        {
+            if(!loadFreezed)
+            {
+                base.StartWorldUpdateSingleLoop();
+            }
         }
 
         // Difference with blockgroup version: viewCull implementation
@@ -535,6 +600,15 @@ namespace Voxelis
         protected override void AssemblyReloadEvents_afterAssemblyReload()
         {
             SetWorld();
+        }
+
+        private void OnGUI()
+        {
+            // Test
+            float _size = GUI.HorizontalSlider(new Rect(340, 10, 800, 30), (float)showDistance, 32.0f, 640.0f);
+
+            showDistance = (int)_size;
+            disappearDistance = (int)(_size + 40);
         }
     }
 }
