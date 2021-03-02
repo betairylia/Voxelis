@@ -10,17 +10,17 @@ namespace Voxelis.BlockExtras
         public FineStructure_16(BlockGroup group, Vector3Int pos, Block block) : base(group, pos, block)
         {
             System.Array.Clear(blockData, 0, 4096);
-            blockData[0] = 0x0f0f;
-            for (int x = 0; x < 16; x++)
-            {
-                for (int y = 0; y < 16; y++)
-                {
-                    for (int z = 0; z < 16; z++)
-                    {
-                        blockData[x * 16 * 16 + y * 16 + z] = 17; // Log
-                    }
-                }
-            }
+            //blockData[0] = 0x0f0f;
+            //for (int x = 0; x < 16; x++)
+            //{
+            //    for (int y = 0; y < 16; y++)
+            //    {
+            //        for (int z = 0; z < 16; z++)
+            //        {
+            //            blockData[x * 16 * 16 + y * 16 + z] = 17; // Log
+            //        }
+            //    }
+            //}
             System.Random rand = new System.Random(pos.x ^ pos.y ^ pos.z);
             for(int i = 0; i < 32; i++)
             {

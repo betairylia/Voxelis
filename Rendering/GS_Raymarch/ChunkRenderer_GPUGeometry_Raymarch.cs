@@ -2,17 +2,20 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using BlockID = System.UInt16;
+
 namespace Voxelis.Rendering
 {
+    // REFACTOR PLEASE WT...H
     public class ChunkRenderer_GPUGeometry_Raymarch : ChunkRenderer_GPUComputeMesh
     {
         public Texture3D fineStructure16_tex3D;
         public ComputeBuffer blockExtraPointers_buffer;
 
         uint[] blkEx_tmpBuf;
-        ushort[] tex3D_tmpBuf;
+        BlockID[] tex3D_tmpBuf;
         public int fsBufSize { get; protected set; }
-        int fsBufRowlen = 32;
+        int fsBufRowlen = 32, fsResolution = 16;
 
         public struct Vertex_GR
         {
@@ -21,6 +24,23 @@ namespace Voxelis.Rendering
             Vector2 uv;
             int block_vert_meta;
             uint id;
+        }
+
+        public virtual void CreateFSTex3D(out Texture3D tex3D, out BlockID[] hostBuffer, int bufferSize, int rowLength = 32, int resolution = 16)
+        {
+            bufferSize = Mathf.CeilToInt(bufferSize / (float)rowLength) * rowLength;
+            tex3D = new Texture3D(resolution * (bufferSize / rowLength), resolution * fsBufRowlen, resolution, TextureFormat.R16, false);
+            tex3D.filterMode = FilterMode.Point;
+            tex3D.wrapMode = TextureWrapMode.Clamp;
+
+            hostBuffer = new BlockID[resolution * (bufferSize / rowLength) * resolution * rowLength * resolution];
+
+            // Umm ... ugly
+            fsBufSize = bufferSize;
+            fsBufRowlen = rowLength;
+            fsResolution = resolution;
+
+            return;
         }
 
         public override void Init(BlockGroup group, Chunk chunk)
@@ -36,20 +56,40 @@ namespace Voxelis.Rendering
                 // TODO: variable
                 fsBufSize = chunk.blockExtrasDict.Count;
                 int maxFSs = 4096;
-                if(fsBufSize > maxFSs)
+                if (fsBufSize > maxFSs)
                 {
                     Debug.LogError($"Too many FS's !! ({fsBufSize} in Chunk {chunk.positionOffset / 32})");
                     fsBufSize = maxFSs;
                 }
-                fsBufSize = Mathf.CeilToInt(chunk.blockExtrasDict.Count / (float)fsBufRowlen) * fsBufRowlen;
 
-                fineStructure16_tex3D = new Texture3D(16 * (fsBufSize / fsBufRowlen), 16 * fsBufRowlen, 16, TextureFormat.R16, false);
-                //fineStructure16_tex3D = new Texture3D(16 * (fsBufSize / fsBufRowlen), 16 * fsBufRowlen, 16, TextureFormat.Alpha8, false);
-                fineStructure16_tex3D.filterMode = FilterMode.Point;
-                fineStructure16_tex3D.wrapMode = TextureWrapMode.Clamp;
+                CreateFSTex3D(out fineStructure16_tex3D, out tex3D_tmpBuf, fsBufSize, fsBufRowlen, 16);
 
                 blkEx_tmpBuf = new uint[this.chunk.blockData.Length];
-                tex3D_tmpBuf = new ushort[16 * (fsBufSize / fsBufRowlen) * 16 * fsBufRowlen * 16];
+            }
+        }
+
+        public virtual void FillHostBuffer(ref BlockID[] hostBuffer, BlockID[] content, int index)
+        {
+            Vector3Int origin = new Vector3Int(index / fsBufRowlen, index % fsBufRowlen, 0) * 16;
+
+            // Upload texture
+            // TODO: block update ... pixel-wise gotta SLOWWWW
+            for (int x = 0; x < 16; x++)
+            {
+                for (int y = 0; y < 16; y++)
+                {
+                    for (int z = 0; z < 16; z++)
+                    {
+                        int ix = 
+                            (origin.x + x)
+                          + (origin.y + y) * (fsBufSize / fsBufRowlen)  * fsResolution
+                          + (origin.z + z) * fsBufSize                  * fsResolution * fsResolution;
+
+                        hostBuffer[ix] = content[x * 16 * 16 + y * 16 + z];
+
+                        //fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color((bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z] / 65536.0f, 0, 0));
+                    }
+                }
             }
         }
 
@@ -73,7 +113,7 @@ namespace Voxelis.Rendering
             #region Overrided
 
             // Before readback, fill compute buffer for block ex pointers & tex3D
-            if(fsBufSize > 0) // Do only if we need render fs's
+            if (fsBufSize > 0) // Do only if we need render fs's
             {
                 System.Array.Clear(blkEx_tmpBuf, 0, blkEx_tmpBuf.Length);
                 uint bexCount = 0;
@@ -83,27 +123,10 @@ namespace Voxelis.Rendering
                     int flatten_ix = pos.x * Chunk.SideLength * Chunk.SideLength + pos.y * Chunk.SideLength + pos.z;
                     blkEx_tmpBuf[flatten_ix] = bexCount | 0x80000000;
 
-                    Vector3Int origin = new Vector3Int((int)bexCount / fsBufRowlen, (int)bexCount % fsBufRowlen, 0) * 16;
-
-                    // Upload texture
-                    // TODO: block update ... pixel-wise gotta SLOWWWW
-                    for(int x = 0; x < 16; x++)
-                    {
-                        for(int y = 0; y < 16; y++)
-                        {
-                            for(int z = 0; z < 16; z++)
-                            {
-                                //int ix = (origin.x + x) * fsBufRowlen * 16 * 16 + (origin.y + y) * 16 + (origin.z + z);
-                                int ix = (origin.x + x) + (origin.y + y) * 16 * (fsBufSize / fsBufRowlen) + (origin.z + z) * fsBufSize * 16 * 16;
-                                tex3D_tmpBuf[ix] = (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z];
-                                //fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color((bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z] / 65536.0f, 0, 0));
-                            }
-                        }
-                    }
+                    FillHostBuffer(ref tex3D_tmpBuf, (bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData, (int)bexCount);
 
                     bexCount += 1;
-                    //Debug.Log(bexCount);
-                    if(bexCount > fsBufSize) { break; }
+                    if (bexCount > fsBufSize) { break; }
                 }
 
                 fineStructure16_tex3D.SetPixelData(tex3D_tmpBuf, 0);
@@ -164,13 +187,6 @@ namespace Voxelis.Rendering
             // Set an sync fence
             GPUDispatchManager.Singleton.AppendTask(this);
 
-            //Vertex[] output = new Vertex[262144];
-            //buffer.GetData(output);
-            //indBuffer.GetData(_ind);
-
-            //Debug.Log("CS finished with " + _ind[0] + " vertices");
-            //Debug.Log(_ind);
-
             // Update my position
             position = chunk.centerPos;
             renderPosition = chunk.positionOffset;
@@ -183,7 +199,7 @@ namespace Voxelis.Rendering
         {
             base.Clean();
 
-            if(blockExtraPointers_buffer != null)
+            if (blockExtraPointers_buffer != null)
             {
                 blockExtraPointers_buffer.Dispose();
             }
