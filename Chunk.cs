@@ -11,6 +11,8 @@ namespace Voxelis
     {
         public const int SideLength = 32;
         public float blockSize = 1.0f;
+        
+        public Vector3Int flatFactor = new Vector3Int(SideLength * SideLength, SideLength, 1);
 
         // Data arrays
         public Unity.Collections.NativeArray<Block> blockData = new Unity.Collections.NativeArray<Block>(32768, Unity.Collections.Allocator.Persistent);

@@ -10,6 +10,10 @@
         _FSTex("Fine Stuctures Tex", 3D) = "white" {}
         _Glossiness("Smoothness", Range(0,1)) = 0.5
         _Metallic("Metallic", Range(0,1)) = 0.0
+
+        _LOD0("LOD 0 distance", Float) = 64.0
+        _LOD1("LOD 1 distance", Float) = 128.0
+        _LOD2("LOD 2 distance", Float) = 256.0
     }
     SubShader
     {
@@ -40,7 +44,7 @@
                 float3 position;
                 float3 normal;
                 float2 uv;
-                int block_vert_info;
+                uint block_vert_info;
                 Block data;
             };
 
@@ -53,6 +57,10 @@
             // Ray march use
             float blockSize;
             float3 FStexGridSize;
+
+            float _LOD0;
+            float _LOD1;
+            float _LOD2;
 
             half _Glossiness;
             half _Metallic;
@@ -143,7 +151,14 @@
                 {
                     // "default value"
                     o.color = fixed4(1, 0, 0, 1);
-                    o.arrayUV = float3(data.uv, -1.0f); // Make uv.z < 0 to tell Frag
+                    o.arrayUV = float3(data.uv, -0.5f); // Make uv.z < 0 to tell Frag; (uint)-uv.z is LOD level (-0, -1, -2, -3)
+
+                    // Calculate LOD level
+                    // Per-vertex rn, ugly but lazy
+                    float dist = length(_WorldSpaceCameraPos - worldPosition.xyz);
+                    o.arrayUV.z += -1.0f * (dist > _LOD0);
+                    o.arrayUV.z += -1.0f * (dist > _LOD1);
+                    o.arrayUV.z += -1.0f * (dist > _LOD2);
                 }
                 else
                 {
@@ -213,6 +228,16 @@
                 {
                     // Following http://jojendersie.de/rendering-huge-amounts-of-voxels-2/#comment-400
 
+                    // Current LOD level (0, 1, 2, 3, 4)
+                    uint LOD = (uint)(-i.arrayUV.z);
+                    uint LOD_exp = 1 << LOD;
+
+                    // Calculated FS resolution
+                    uint resolution = 16 / LOD_exp;
+                    float resolutionF = float(resolution);
+                    float res_eps = resolutionF + 0.1f;
+                    float3 center_offset = float3(0.5, 0.5, 0.5) / float(LOD_exp);
+
                     // origin in tex3D
                     float3 origin = float3(i.arrayUV.xy, 0);
 
@@ -220,7 +245,7 @@
                     float3 size = FStexGridSize;
 
                     // Ray position
-                    float3 p0 = i.blockSpacePos * 16.0f;
+                    float3 p0 = i.blockSpacePos * resolutionF;
                     float3 p = p0;
 
                     // Ray direction
@@ -250,8 +275,7 @@
                         p = p0 + d * t;
 
                         // Ray has left voxel
-                        //if (any(p > float3(1.02, 1.02, 1.02)) || any(p < float3(-0.02, -0.02, -0.02)))
-                        if (any(p > float3(16.1, 16.1, 16.1)) || any(p < float3(-0.1, -0.1, -0.1)))
+                        if (any(p > float3(res_eps, res_eps, res_eps)) || any(p < float3(-0.1, -0.1, -0.1)))
                         {
                             //so.Albedo = float3(rayStep / 64.0, 0, 0);
                             clip(-1.0);
@@ -261,12 +285,12 @@
                         // BlockID
                         // Pos
                         int3 p_voxel = trunc(p);
-                        p_voxel = clamp(p_voxel, 0, 15);
-                        v = trunc(tex3Dlod(_FSTex, float4(origin + (p_voxel + float3(0.5, 0.5, 0.5)) / 16.0f * size, 0)).r * 65536.0);
+                        p_voxel = clamp(p_voxel, 0, resolution - 1);
+                        v = trunc(tex3Dlod(_FSTex, float4(origin + (p_voxel + center_offset) / resolutionF * size, 0)).r * 65536.0);
 
                         if (v > 0)
                         {
-                            so.Albedo = float3(0, rayStep / 64.0, 0);
+                            so.Albedo = float3(0, rayStep / 100.0, 0);
                             normal = abs(p - round(p));
                             break;
                         }
@@ -283,12 +307,13 @@
 
                     // Retrieve normal & block uv
                     float2 blockuv;
-                    if (normal.x < 0.001) { so.Normal = dirSign.xww; blockuv = p.yz / 16.0; }
-                    if (normal.y < 0.001) { so.Normal = dirSign.wyw; blockuv = p.xz / 16.0; }
-                    if (normal.z < 0.001) { so.Normal = dirSign.wwz; blockuv = p.xy / 16.0; }
+                    if (normal.x < 0.001) { so.Normal = -dirSign.xww; blockuv = p.yz / resolutionF; }
+                    if (normal.y < 0.001) { so.Normal = -dirSign.wyw; blockuv = p.xz / resolutionF; }
+                    if (normal.z < 0.001) { so.Normal = -dirSign.wwz; blockuv = p.xy / resolutionF; }
 
                     // Retrieve world pos, world normal & depth
-                    i.worldPos = i.worldPos + float4(mul(_LocalToWorld, float4((p - p0) / 16.0, 0)).xyz, 0);
+                    // TODO: maybe use clip space in FS and do the mul's in VS ...
+                    i.worldPos = i.worldPos + float4(mul(_LocalToWorld, float4((p - p0) / resolutionF, 0)).xyz, 0);
                     i.worldNormal = mul((float3x3)_LocalToWorld, so.Normal);
                     i.clipZW = UnityWorldToClipPos(i.worldPos).zw;
 

@@ -37,6 +37,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Glossiness: 0
+    - _LOD0: 24
+    - _LOD1: 48
+    - _LOD2: 96
     - _Metallic: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

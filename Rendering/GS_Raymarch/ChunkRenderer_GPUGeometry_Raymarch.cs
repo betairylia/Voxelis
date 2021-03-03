@@ -12,17 +12,17 @@ namespace Voxelis.Rendering
         public Texture3D fineStructure16_tex3D;
         public ComputeBuffer blockExtraPointers_buffer;
 
-        uint[] blkEx_tmpBuf;
-        BlockID[] tex3D_tmpBuf;
+        protected uint[] blkEx_tmpBuf;
+        protected BlockID[] tex3D_tmpBuf;
         public int fsBufSize { get; protected set; }
-        int fsBufRowlen = 32, fsResolution = 16;
+        protected int fsBufRowlen = 32, fsResolution = 16;
 
         public struct Vertex_GR
         {
             Vector3 position;
             Vector3 normal;
             Vector2 uv;
-            int block_vert_meta;
+            uint block_vert_meta;
             uint id;
         }
 
@@ -70,6 +70,11 @@ namespace Voxelis.Rendering
 
         public virtual void FillHostBuffer(ref BlockID[] hostBuffer, BlockID[] content, int index)
         {
+            FillHostBuffer(ref hostBuffer, content, index, fsResolution * fsResolution, fsResolution, 1);
+        }
+
+        public virtual void FillHostBuffer(ref BlockID[] hostBuffer, BlockID[] content, int index, int flatX, int flatY, int flatZ)
+        {
             Vector3Int origin = new Vector3Int(index / fsBufRowlen, index % fsBufRowlen, 0) * 16;
 
             // Upload texture
@@ -80,12 +85,12 @@ namespace Voxelis.Rendering
                 {
                     for (int z = 0; z < 16; z++)
                     {
-                        int ix = 
+                        int ix =
                             (origin.x + x)
-                          + (origin.y + y) * (fsBufSize / fsBufRowlen)  * fsResolution
-                          + (origin.z + z) * fsBufSize                  * fsResolution * fsResolution;
+                          + (origin.y + y) * (fsBufSize / fsBufRowlen) * fsResolution
+                          + (origin.z + z) * fsBufSize * fsResolution * fsResolution;
 
-                        hostBuffer[ix] = content[x * 16 * 16 + y * 16 + z];
+                        hostBuffer[ix] = content[x * flatX + y * flatY + z * flatZ];
 
                         //fineStructure16_tex3D.SetPixel(origin.x + x, origin.y + y, origin.z + z, new Color((bexPair.Value as Voxelis.BlockExtras.FineStructure_16).blockData[x * 16 * 16 + y * 16 + z] / 65536.0f, 0, 0));
                     }
@@ -102,6 +107,9 @@ namespace Voxelis.Rendering
             indBuffer.SetData(_ind);
 
             inputBuffer.SetData(this.chunk.blockData);
+
+            // Set Flatten Factor
+            cs_chunkMeshPopulator.SetInts("flatFactor", this.chunk.flatFactor.x, this.chunk.flatFactor.y, this.chunk.flatFactor.z);
 
             // Set buffers for I/O
             cs_chunkMeshPopulator.SetBuffer(1, "indirectBuffer", indBuffer);
@@ -142,7 +150,9 @@ namespace Voxelis.Rendering
             #endregion
 
             indBuffer.GetData(_ind);
-            inputBuffer.SetData(this.chunk.blockData);
+
+            // Maybe we don't need this ?
+            // inputBuffer.SetData(this.chunk.blockData);
 
             int allocSize = (int)(_ind[0] * 1.25) + 1024;
             //int allocSize = 65536;

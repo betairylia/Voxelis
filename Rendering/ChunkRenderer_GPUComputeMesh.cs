@@ -176,17 +176,22 @@ namespace Voxelis.Rendering
             chunk.renderer = null;
         }
 
-        public override void Render(BlockGroup group)
+        public virtual void RenderAt(Transform transform)
         {
-            var mat = Matrix4x4.TRS(group.transform.position + renderPosition, group.transform.rotation, group.transform.lossyScale);
+            var mat = Matrix4x4.TRS(transform.position + renderPosition, transform.rotation, transform.lossyScale);
             matProp.SetMatrix("_LocalToWorld", mat);
             matProp.SetMatrix("_WorldToLocal", mat.inverse);
 
             Graphics.DrawProceduralIndirect(
                 chunkMat,
-                new Bounds(group.transform.position + position, group.transform.lossyScale * 32),
+                new Bounds(transform.position + position, transform.lossyScale * 32),
                 MeshTopology.Triangles,
                 indBuffer, 0, null, matProp);
+        }
+
+        public override void Render(BlockGroup group)
+        {
+            RenderAt(group.transform);
         }
 
         public override uint GetVertCount()
