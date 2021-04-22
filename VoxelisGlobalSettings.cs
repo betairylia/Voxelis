@@ -12,8 +12,7 @@ namespace Voxelis
     {
         public static string k_SettingsPath = "Assets/Voxelis/GlobalSettings.asset";
 
-        [Inherits(typeof(ChunkRenderableBase))]
-        public TypeReference rendererType;
+        public RenderSetup renderSetup;
 
         public Data.BlockRegistryTable blockRegistryTable;
 

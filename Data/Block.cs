@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -32,8 +33,50 @@ namespace Voxelis
             return new Block() { id = 0xffff, meta = color_16 };
         }
 
+        public static Block FromColor(Color color)
+        {
+            // Convert RGBA888 (32bit) to RGBA444 (16bit)
+            ushort color_16 = (ushort)(
+                (ushort)(color.r * 16) << 12 +   /* r */
+                (ushort)(color.g * 16) << 8 +   /* g */
+                (ushort)(color.b * 16) << 4 +   /* b */
+                (ushort)(color.a * 16)                 /* a */
+            );
+
+            return new Block() { id = 0xffff, meta = color_16 };
+        }
+
+        public static bool CanMergeRenderable(Block a, Block b)
+        {
+            return (a.id == b.id) && (a.meta == b.meta);
+        }
+
+        public float PackFloat()
+        {
+            return BitConverter.ToSingle(BitConverter.GetBytes(
+                ((uint)id << 16) + (uint)meta
+                ), 0);
+        }
+
+        public static Block UnpackFloat(float value)
+        {
+            Block b;
+            uint raw = BitConverter.ToUInt32(BitConverter.GetBytes(value), 0);
+            b.id = (ushort)(raw >> 16);
+            b.meta = (ushort)(raw & 0xFFFF);
+
+            return b;
+        }
+
         public bool IsSolid()
         {
+            // TODO: Check Block Definitions instead of this.
+            return !(id == 0 || (id == 0xffff && meta == 0));
+        }
+
+        public bool IsRenderable()
+        {
+            // TODO: Check Block Definitions instead of this.
             return !(id == 0 || (id == 0xffff && meta == 0));
         }
 

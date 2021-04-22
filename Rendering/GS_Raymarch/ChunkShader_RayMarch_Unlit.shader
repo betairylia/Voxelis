@@ -1,4 +1,4 @@
-﻿Shader "Voxelis/ChunkShader_TexArray_GSRayMarch_Unlit"
+﻿Shader "Voxelis/ChunkShader_TexArray_RayMarch_Unlit"
 {
     Properties
     {
@@ -27,7 +27,6 @@
 
             #pragma vertex vert
             #pragma fragment frag
-            #pragma geometry geom
             #pragma multi_compile_fwdbase nolightmap nodirlightmap nodynlightmap novertexlight
             #pragma target 5.0
             #pragma require 2darray
@@ -39,17 +38,18 @@
             #include "AutoLight.cginc"
 
             #include "../../Data/Block.cginc"
-            #include "primitives.cginc"
 
-            struct GS_PointVertex
+            struct cs_Vertex
             {
-                // TODO: FS Buffer UVW
-                uint data;
-                Block block;
+                float3 position;
+                float3 normal;
+                float2 uv;
+                uint block_vert_info;
+                Block data;
             };
 
         #if SHADER_TARGET >= 45
-            StructuredBuffer<GS_PointVertex> vbuffer;
+            StructuredBuffer<cs_Vertex> cs_vbuffer;
         #endif
 
             sampler2D _MainTex;
@@ -73,27 +73,15 @@
             sampler3D _FSTex;
             UNITY_DECLARE_TEX2DARRAY(_MainTexArr);
 
-            struct v2g
-            {
-                float4 pos : SV_POSITION;
-
-                uint facebit : TEXCOORD0;
-
-                // Block data
-                float2 uvSize : TEXCOORD1;
-                float3 uvOrigin : TEXCOORD2;
-                fixed4 color : COLOR;
-            };
-
-            struct g2f
+            struct v2f
             {
                 float4 pos : SV_POSITION;
                 float3 arrayUV : TEXCOORD0;
 
-                float3 worldPos : POSITION2;
+                float4 worldPos : POSITION2;
                 float3 worldNormal : NORMAL;
 
-                fixed4 color : TEXCOORD1;
+                float4 color : TEXCOORD1;
 
                 float3 blockSpacePos : TEXCOORD2;
                 float3 viewDir : TEXCOORD3;
@@ -117,7 +105,7 @@
                 float depth : SV_DEPTH;
             };
 
-            GBufferOut ApplyUnityStandardLit(g2f i, GBufferOut o, SurfaceOutputStandard so);
+            GBufferOut ApplyUnityStandardLit(v2f i, GBufferOut o, SurfaceOutputStandard so);
 
             inline float4 GetBlockLUT(uint fid)
             {
@@ -134,29 +122,26 @@
                 return uv_org + float3(uv * uv_step, 0);
             }
 
-            v2g vert(appdata_full v, uint vID : SV_VertexID)
+            v2f vert(appdata_full v, uint vID : SV_VertexID)
             {
-                v2g o;
+                v2f o;
 
             #if SHADER_TARGET >= 45
-                GS_PointVertex data = vbuffer[vID];
+                cs_Vertex data = cs_vbuffer[vID];
 
-                float4 localPosition = float4(
-                    (data.data >> 10) & 0x1f,
-                    (data.data >> 5) & 0x1f,
-                    (data.data) & 0x1f,
-                    1
-                );
+                float4 worldPosition = mul(_LocalToWorld, float4(data.position, 1.0f));
+                float3 worldNormal = mul((float3x3)_LocalToWorld, data.normal);
 
-                // TODO: use view space in GS ??
-                // TODO: JUST GIVEUP GS LMAO
-                o.pos = localPosition;
+                o.worldPos = worldPosition;
+                o.worldNormal = worldNormal;
+                o.blockSpacePos = float3(
+                    (data.block_vert_info & 4) / 4,
+                    (data.block_vert_info & 2) / 2,
+                    (data.block_vert_info & 1) / 1);
+                o.viewDir = UnityWorldSpaceViewDir(worldPosition.xyz);
 
-                o.facebit = (data.data >> 15) & 0x3f;
-
-                // Block data
-                Block blk = data.block;
-
+                // Find block ID and LUT values
+                Block blk = data.data;
                 uint fid = GetBlockID(blk);
                 float4 lut = GetBlockLUT(fid);
                 uint _a = asuint(lut.a); // float interpreted as uint (get bits)
@@ -166,15 +151,14 @@
                 {
                     // "default value"
                     o.color = fixed4(1, 0, 0, 1);
-                    o.uvOrigin = float3(0, 0, -0.5f); // Make uv.z < 0 to tell Frag; (uint)-uv.z is LOD level (-0, -1, -2, -3)
-                    o.uvSize = float2(0, 0);
+                    o.arrayUV = float3(data.uv, -0.5f); // Make uv.z < 0 to tell Frag; (uint)-uv.z is LOD level (-0, -1, -2, -3)
 
                     // Calculate LOD level
                     // Per-vertex rn, ugly but lazy
-                    float dist = length(_WorldSpaceCameraPos - mul(_LocalToWorld, localPosition).xyz);
-                    o.uvOrigin.z += -1.0f * (dist > _LOD0);
-                    o.uvOrigin.z += -1.0f * (dist > _LOD1);
-                    o.uvOrigin.z += -1.0f * (dist > _LOD2);
+                    float dist = length(_WorldSpaceCameraPos - worldPosition.xyz);
+                    o.arrayUV.z += -1.0f * (dist > _LOD0);
+                    o.arrayUV.z += -1.0f * (dist > _LOD1);
+                    o.arrayUV.z += -1.0f * (dist > _LOD2);
                 }
                 else
                 {
@@ -187,84 +171,35 @@
                     );
 
                     // Calculate UV
-                    o.uvOrigin = clamp(0, 1, lut.rgb);
-                    o.uvSize = float2(float((_a >> 11) & 2047) / 2048.0, float(_a & 2047) /
-                        2048.0);
-
+                    o.arrayUV = GetArrayUV(lut, data.uv);
                     o.color = lerp(o.color, float4(1, 1, 1, 1), (_a & 0x10000000) == 0); // tint or not
                 }
 
-            #else
-                // DO NOTHING
-                // RIP COMPUTER
+                // TEST
+
+                float3 ndotl = saturate(dot(worldNormal, _WorldSpaceLightPos0.xyz));
+                float3 ambient = ShadeSH9(float4(worldNormal, 1.0f));
+                float3 diffuse = (ndotl * _LightColor0.rgb);
+                float3 color = v.color;
+
+                o.pos = UnityWorldToClipPos(worldPosition);
+                o.clipZW = o.pos.zw;
+
+                //o.ambient = ambient;
+                //o.diffuse = diffuse;
+                //TRANSFER_SHADOW(o)
+            #endif
+
+            #ifdef LIGHTMAP_OFF
+                #ifndef SPHERICAL_HARMONICS_PER_PIXEL
+                    #if UNITY_SHOULD_SAMPLE_SH
+                        o.sh = 0;
+                        o.sh = ShadeSHPerVertex(o.worldNormal, o.sh);
+                    #endif
+                #endif
             #endif
 
                 return o;
-            }
-
-            [maxvertexcount(18)]
-            void geom(point v2g points[1], inout TriangleStream<g2f> triStream)
-            {
-                v2g i = points[0];
-                g2f o;
-
-                //float4 worldCenterPos = mul(_LocalToWorld, i.pos + float4(0.5, 0.5, 0.5, 0));
-                //float3 centerViewDir = WorldSpaceViewDir(worldCenterPos);
-
-                //// View cull
-                //if (length(centerViewDir) > 20.0 && dot(float3(UNITY_MATRIX_V[0][2], -UNITY_MATRIX_V[1][2], UNITY_MATRIX_V[2][2]), centerViewDir) < 0)
-                //{
-                //    return;
-                //}
-
-                // TEST VALUES
-                o.color = i.color;
-
-                for (int f = 0; f < 6; f++)
-                {
-                    float4 faceCenterPos = mul(_LocalToWorld, i.pos + float4(cube_normal[f] * 0.5 + 0.5, 0));
-                    float3 faceViewDir = WorldSpaceViewDir(faceCenterPos);
-                    o.worldNormal = mul((float3x3)_LocalToWorld, cube_normal[f]);
-
-                    // Face exist & front face
-                    if ((i.facebit & (1 << f)) > 0 && (dot(o.worldNormal, faceViewDir) > 0))
-                    {
-                        for (int t = 0; t < 2; t++)
-                        {
-                            for (int v = 0; v < 3; v++)
-                            {
-                                o.blockSpacePos = cube_pos[f * 6 + t * 3 + v];
-                                float4 worldPos = mul(_LocalToWorld, i.pos + float4(o.blockSpacePos, 0));
-                                o.pos = mul(UNITY_MATRIX_VP, worldPos);
-
-                                o.worldPos = worldPos.xyz;
-
-                                float2 bUV = float2(0, 0);
-                                if (f == 0 || f == 1) { bUV = o.blockSpacePos.yz; }
-                                if (f == 2 || f == 3) { bUV = o.blockSpacePos.xz; }
-                                if (f == 4 || f == 5) { bUV = o.blockSpacePos.xy; }
-
-                                o.arrayUV = i.uvOrigin + float3(bUV * i.uvSize, 0);
-
-                                o.viewDir = UnityWorldSpaceViewDir(o.worldPos.xyz);
-                                o.clipZW = o.pos.zw;
-
-                            #ifdef LIGHTMAP_OFF
-                                #ifndef SPHERICAL_HARMONICS_PER_PIXEL
-                                    #if UNITY_SHOULD_SAMPLE_SH
-                                        o.sh = 0;
-                                        o.sh = ShadeSHPerVertex(o.worldNormal, o.sh);
-                                    #endif
-                                #endif
-                            #endif
-
-                                triStream.Append(o);
-                            }
-
-                            triStream.RestartStrip();
-                        }
-                    }
-                }
             }
 
             float CalcDepth(float3 vert) 
@@ -273,7 +208,7 @@
                 return pos_clip.z / pos_clip.w;
             }
 
-            GBufferOut frag(g2f i)// : SV_Target
+            GBufferOut frag(v2f i)// : SV_Target
             {
                 i.viewDir = normalize(i.viewDir);
 
@@ -382,9 +317,9 @@
 
                     // Retrieve world pos, world normal & depth
                     // TODO: maybe use clip space in FS and do the mul's in VS ...
-                    i.worldPos = i.worldPos + mul(_LocalToWorld, float4((p - p0) / resolutionF, 0)).xyz;
+                    i.worldPos = i.worldPos + float4(mul(_LocalToWorld, float4((p - p0) / resolutionF, 0)).xyz, 0);
                     i.worldNormal = mul((float3x3)_LocalToWorld, so.Normal);
-                    i.clipZW = UnityWorldToClipPos(float4(i.worldPos, 1)).zw;
+                    i.clipZW = UnityWorldToClipPos(i.worldPos).zw;
 
                     // Retrieve block UVs
                     float4 lut = GetBlockLUT(v);
@@ -455,7 +390,7 @@
             // THANK YOU https://github.com/hecomi/uRaymarching/blob/master/Assets/uRaymarching/Shaders/Include/Legacy/DeferredStandard.cginc
             // http://tips.hecomi.com/entry/2016/10/01/000232
             // THANK YOU GOD HECOMI Y~Orz
-            GBufferOut ApplyUnityStandardLit(g2f i, GBufferOut o, SurfaceOutputStandard so)
+            GBufferOut ApplyUnityStandardLit(v2f i, GBufferOut o, SurfaceOutputStandard so)
             {
                 UnityGI gi;
                 UNITY_INITIALIZE_OUTPUT(UnityGI, gi);
@@ -510,7 +445,7 @@
                 o.emission = LightingStandard_Deferred(so, i.viewDir, gi, o.diffuse, o.specular, o.normal);
 #if defined(SHADOWS_SHADOWMASK) && (UNITY_ALLOWED_MRT_COUNT > 4)
                 //outShadowMask = UnityGetRawBakedOcclusions(IN.lmap.xy, worldPos);
-                outShadowMask = UnityGetRawBakedOcclusions(float2(0, 0), worldPos);
+                //outShadowMask = UnityGetRawBakedOcclusions(float2(0, 0), worldPos);
 #endif
 #ifndef UNITY_HDR_ON
                 //o.emission.rgb = exp2(-o.emission.rgb);

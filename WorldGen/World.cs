@@ -1,4 +1,6 @@
 ﻿#define PROFILE
+//#define BALL_MOVING_TEST
+//#define ALLOC_TIME_TEST
 
 using System.Collections;
 using System.Collections.Generic;
@@ -78,6 +80,7 @@ namespace Voxelis
             //ChunkRenderer_GPUComputeMesh.cs_chunkMeshPopulator = cs_chunkMeshPopulator;
             //ChunkRenderer_GPUComputeMesh.chunkMat = chunkMat;
 
+#if ALLOC_TIME_TEST
             // Time test
             var watch = new System.Diagnostics.Stopwatch();
             int count = 1024;
@@ -127,6 +130,7 @@ namespace Voxelis
             }
             watch.Stop();
             Debug.Log($"Block[]: {watch.ElapsedMilliseconds} ms");
+#endif
 
             SetWorld();
         }
@@ -283,9 +287,11 @@ namespace Voxelis
             mesh.triangles = triangles;
         }
 
-        //Vector3 _pos;
-        //int f = 0;
-        //float mspd = 0.2f;
+#if BALL_MOVING_TEST
+        Vector3 _pos;
+        int f = 0;
+        float mspd = 0.2f;
+#endif
         // Update is called once per frame
         protected override void Update()
         {
@@ -306,15 +312,17 @@ namespace Voxelis
             //    ), 0xffffffff);
             //}
 
-            //if(f % 1 == 0)
-            //{
-            //    int size = 50;
-            //    if (_pos == null) { _pos = new Vector3(mspd * Time.time - 10, 80, -10); }
-            //    (new UglySphere(0x00000000)).Generate(new BoundsInt(Mathf.FloorToInt(_pos.x), Mathf.FloorToInt(_pos.y), Mathf.FloorToInt(_pos.z), size, size, size), this);
-            //    _pos = new Vector3(Mathf.Sin(mspd * Time.time - 10) * 128.0f, 80, -Mathf.Cos(mspd * Time.time - 10) * 128.0f);
-            //    (new UglySphere(0x00ff00ff)).Generate(new BoundsInt(Mathf.FloorToInt(_pos.x), Mathf.FloorToInt(_pos.y), Mathf.FloorToInt(_pos.z), size, size, size), this);
-            //}
-            //f++;
+#if BALL_MOVING_TEST
+            if (f % 1 == 0)
+            {
+                int size = 50;
+                if (_pos == null) { _pos = new Vector3(mspd * Time.time - 10, 80, -10); }
+                (new UglySphere(Block.Empty)).Generate(new BoundsInt(Mathf.FloorToInt(_pos.x), Mathf.FloorToInt(_pos.y), Mathf.FloorToInt(_pos.z), size, size, size), this);
+                _pos = new Vector3(Mathf.Sin(mspd * Time.time - 10) * 128.0f, 80, -Mathf.Cos(mspd * Time.time - 10) * 128.0f);
+                (new UglySphere(Block.From32bitColor(0x00ff00ff))).Generate(new BoundsInt(Mathf.FloorToInt(_pos.x), Mathf.FloorToInt(_pos.y), Mathf.FloorToInt(_pos.z), size, size, size), this);
+            }
+            f++;
+#endif
 
             // SUPER HEAVY - FIXME: Optimize it orz
             //RefreshRenderables();
@@ -323,12 +331,14 @@ namespace Voxelis
                 // Get renderable size
                 uint vCount = 0;
                 uint fsCount = 0;
+                uint fsBufSize = 0;
                 foreach (var r in renderables)
                 {
                     vCount += r.GetVertCount();
                     if(r is ChunkRenderer_GPUGeometry_Raymarch)
                     {
                         fsCount += (uint)((r as ChunkRenderer_GPUGeometry_Raymarch).fsBufSize);
+                        fsBufSize += (uint)(r as ChunkRenderer_GPUGeometry_Raymarch).totalMipSize / 1024;
                     }
                 }
 
@@ -344,7 +354,7 @@ namespace Voxelis
                     $"   BEx:   {bexCount}\n" +
                     $"Rendered: {renderables.Count} ({(vCount / 1024.0f) * System.Runtime.InteropServices.Marshal.SizeOf(typeof(ChunkRenderer_GPUComputeMesh.Vertex)) / 1024.0f} MB)\n" +
                     $"          {vCount} verts\n" +
-                    $"  - FS16: {fsCount} ({fsCount * 8 / 1024} MB)\n" +
+                    $"  - FS16: {fsCount} ({fsBufSize * 2 / 1024} MB)\n" +
                     $"\n" +
                     $"@ {(int)follows.position.x}, {(int)follows.position.y}, {(int)follows.position.z}\n" +
                     $"\n" +

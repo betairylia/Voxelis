@@ -10,7 +10,7 @@ using BlockID = System.UInt16;
 namespace Voxelis.Rendering
 {
     // REFACTOR PLEASE WT...H
-    public class ChunkRenderer_GPUGeometry_Raymarch : ChunkRenderer_GPUComputeMesh
+    public class ChunkRenderer_GPUGeometry_Raymarch_fastvariant : ChunkRenderer_GPUComputeMesh
     {
         public static bool MaterialExported = false;
 
@@ -123,8 +123,8 @@ namespace Voxelis.Rendering
                             // TODO: use mode across grids
                             // TODO: make this async & calculate in cpp
                             hostBuffer[ix] = content[
-                                ((x << m) + ((m > 0) ? (1 << (m - 1)) : 0)) * flatX + 
-                                ((y << m) + ((m > 0) ? (1 << (m - 1)) : 0)) * flatY + 
+                                ((x << m) + ((m > 0) ? (1 << (m - 1)) : 0)) * flatX +
+                                ((y << m) + ((m > 0) ? (1 << (m - 1)) : 0)) * flatY +
                                 ((z << m) + ((m > 0) ? (1 << (m - 1)) : 0)) * flatZ];
                             //hostBuffer[ix] = (ushort)(0xf00f | (ushort)(0x0100 << m));
 
@@ -143,24 +143,51 @@ namespace Voxelis.Rendering
             waiting = true;
 
             UnityEngine.Profiling.Profiler.BeginSample("CRender_GSRayM: GenerateGeometry");
-            UnityEngine.Profiling.Profiler.BeginSample("CRender_GSRayM: Dispatch Kernel1");
-
-            _ind = new uint[] { 0, 1, 0, 0, 0 };
-            indBuffer.SetData(_ind);
-
+            
             inputBuffer.SetData(this.chunk.blockData);
+
+            if (buffer == null)
+            {
+                UnityEngine.Profiling.Profiler.BeginSample("CRender_GSRayM: Dispatch Kernel1");
+                _ind = new uint[] { 0, 1, 0, 0, 0 };
+                indBuffer.SetData(_ind);
+
+                // Set buffers for I/O
+                cs_chunkMeshPopulator.SetBuffer(1, "indirectBuffer", indBuffer);
+                cs_chunkMeshPopulator.SetBuffer(1, "chunkData", inputBuffer);
+
+                // Get chunk vert count
+                cs_chunkMeshPopulator.Dispatch(1, 32 / 8, 32 / 8, 32 / 8);
+                UnityEngine.Profiling.Profiler.EndSample();
+
+                UnityEngine.Profiling.Profiler.BeginSample("CRender_GSRayM: Readback #vert");
+
+                indBuffer.GetData(_ind);
+
+                UnityEngine.Profiling.Profiler.EndSample();
+
+                int allocSize = 65536;
+
+                if (_ind[0] == 0)
+                {
+                    chunk.dirty = false;
+                    populated = true;
+                    waiting = false;
+
+                    UnityEngine.Profiling.Profiler.EndSample();
+
+                    return;
+                }
+                else
+                {
+                    buffer = new ComputeBuffer(allocSize, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex_GR)));
+                    vCount = (uint)allocSize;
+                }
+            }
+
 
             // Set Flatten Factor
             cs_chunkMeshPopulator.SetInts("flatFactor", this.chunk.flatFactor.x, this.chunk.flatFactor.y, this.chunk.flatFactor.z);
-
-            // Set buffers for I/O
-            cs_chunkMeshPopulator.SetBuffer(1, "indirectBuffer", indBuffer);
-            cs_chunkMeshPopulator.SetBuffer(1, "chunkData", inputBuffer);
-
-            // Get chunk vert count
-            cs_chunkMeshPopulator.Dispatch(1, 32 / 8, 32 / 8, 32 / 8);
-
-            UnityEngine.Profiling.Profiler.EndSample();
 
             #region Overrided
 
@@ -208,46 +235,8 @@ namespace Voxelis.Rendering
 
             #endregion
 
-            UnityEngine.Profiling.Profiler.BeginSample("CRender_GSRayM: Readback #vert");
-
-            indBuffer.GetData(_ind);
-
-            UnityEngine.Profiling.Profiler.EndSample();
             UnityEngine.Profiling.Profiler.BeginSample("CRender_GSRayM: Dispatch Kernel0");
 
-            // Maybe we don't need this ?
-            // inputBuffer.SetData(this.chunk.blockData);
-
-            int allocSize = (int)(_ind[0] * 1.25) + 1024;
-            //int allocSize = 65536;
-            //_ind[0] = 65536;
-
-            // Need to extend buffer size
-            if (vCount < _ind[0])
-            {
-                // Realloc
-                if (buffer != null)
-                {
-                    buffer_bak = buffer;
-                    matProp.SetBuffer("cs_vbuffer", buffer_bak);
-                }
-
-                // 1.0 - scale factor for potentially more blocks
-                buffer = new ComputeBuffer(allocSize, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex_GR)));
-            }
-            else if (_ind[0] == 0)
-            {
-                chunk.dirty = false;
-                populated = true;
-                waiting = false;
-
-                UnityEngine.Profiling.Profiler.EndSample();
-                UnityEngine.Profiling.Profiler.EndSample();
-
-                return;
-            }
-
-            vCount = (uint)allocSize;
             _ind[0] = 0;
             indBuffer.SetData(_ind);
 
@@ -304,7 +293,7 @@ namespace Voxelis.Rendering
             sb.Append("\n");
             foreach (Vertex_GR v in output)
             {
-                if(v.block.id < 0 || v.block.id > 65535)
+                if (v.block.id < 0 || v.block.id > 65535)
                 {
                     Debug.LogError(v.block.id);
                 }
@@ -314,8 +303,8 @@ namespace Voxelis.Rendering
                 if (v.block.id == 0xffff)
                 {
                     int r = ((v.block.meta >> 12) & 0xf);
-                    int g = ((v.block.meta >>  8) & 0xf);
-                    int b = ((v.block.meta >>  4) & 0xf);
+                    int g = ((v.block.meta >> 8) & 0xf);
+                    int b = ((v.block.meta >> 4) & 0xf);
                     uv.x = ((r * 4 + b / 4) + 0.5f) / 64.0f;
                     uv.y = ((g * 4 + b % 4) + 0.5f) / 64.0f;
                 }
@@ -347,7 +336,7 @@ namespace Voxelis.Rendering
             for (int i = 0; i < vCount; i += 3)
             {
                 sb.Append(string.Format("f {0}/{0}/{0} {1}/{1}/{1} {2}/{2}/{2}\n",
-                        i+1, i + 2, i + 3));
+                        i + 1, i + 2, i + 3));
             }
 
             using (StreamWriter sw = new StreamWriter(name))
@@ -357,7 +346,7 @@ namespace Voxelis.Rendering
 
 
             // Material
-            if(!MaterialExported)
+            if (!MaterialExported)
             {
                 Texture2D tex = new Texture2D(
                     Globals.voxelisMain.Instance.globalSettings.blockRegistryTable.BlockTexArray.width,
@@ -370,7 +359,7 @@ namespace Voxelis.Rendering
 
                 // RGB444 colors
                 Texture2D texRGB = new Texture2D(64, 64);
-                for(int r = 0; r < 16; r++)
+                for (int r = 0; r < 16; r++)
                     for (int g = 0; g < 16; g++)
                         for (int b = 0; b < 16; b++)
                         {

@@ -1,4 +1,4 @@
-﻿Shader "Voxelis/ChunkShader_TexArray_GSRaymarch"
+﻿Shader "Voxelis/ChunkShader_TexArray_Raymarch"
 {
     Properties
     {

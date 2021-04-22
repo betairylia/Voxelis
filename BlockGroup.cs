@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Voxelis.Rendering;
 
+using System.Threading.Tasks;
+
 namespace Voxelis
 {
     public class BlockGroup : MonoBehaviour
@@ -40,6 +42,15 @@ namespace Voxelis
 
         [HideInInspector]
         public Camera mainCam;
+
+        Vector3Int[] neighbors = new Vector3Int[6] {
+            Vector3Int.right,
+            Vector3Int.left,
+            Vector3Int.up,
+            Vector3Int.down,
+            new Vector3Int(0, 0, 1),
+            new Vector3Int(0, 0, -1),
+        };
 
         // Use this for initialization
         protected virtual void Start()
@@ -114,6 +125,11 @@ namespace Voxelis
             Vector3Int chkPos = new Vector3Int(pos.x < 0 ? (pos.x + 1) / 32 - 1 : pos.x / 32, pos.y < 0 ? (pos.y + 1) / 32 - 1 : pos.y / 32, pos.z < 0 ? (pos.z + 1) / 32 - 1 : pos.z / 32);
             posInChunk = pos - chkPos * 32;
             return chkPos;
+        }
+
+        public Block GetBlock(int x, int y, int z)
+        {
+            return GetBlock(new Vector3Int(x, y, z));
         }
 
         public Block GetBlock(Vector3Int pos)
@@ -247,9 +263,55 @@ namespace Voxelis
                         renderables.AddLast(chk.renderer);
                     }
 
-                    if (chk.hasRenderer() && chk.dirty && chk.prepared)
+                    if (chk.hasRenderer())
                     {
-                        chk.renderer.GenerateGeometry(this, chk);
+                        if(chk.renderer is INeighborAwareChunkRenderable)
+                        {
+                            if (chk.dirty && chk.prepared)
+                            {
+                                UnityEngine.Profiling.Profiler.BeginSample("FillNeighbors");
+                                Chunk[] refs = new Chunk[6];
+                                bool drawThis = true;
+
+                                for(int i = 0; i < 6; i++)
+                                {
+                                    Vector3Int neighborPos = chkpos + neighbors[i];
+                                    bool inrange = ShouldPrepareData(neighborPos);
+                                    
+                                    if (!inrange) { refs[i] = null; continue; }
+
+                                    if(chunks.TryGetValue(neighborPos, out refs[i]))
+                                    {
+                                        if(!refs[i].isReadyForPresent())
+                                        {
+                                            drawThis = false;
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        drawThis = false;
+                                        break;
+                                    }
+                                }
+
+                                UnityEngine.Profiling.Profiler.EndSample();
+
+                                if(drawThis)
+                                {
+                                    UnityEngine.Profiling.Profiler.BeginSample("GenerateGeometryNeighborAware");
+                                    (chk.renderer as INeighborAwareChunkRenderable).GenerateGeometryNeighborAware(this, chk, refs[0], refs[1], refs[2], refs[3], refs[4], refs[5]);
+                                    UnityEngine.Profiling.Profiler.EndSample();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if(chk.dirty && chk.prepared)
+                            {
+                                chk.renderer.GenerateGeometry(this, chk);
+                            }
+                        }
                     }
 
                     if ((Time.realtimeSinceStartup - startTime) > (budgetMS / 1000.0f))
@@ -375,10 +437,12 @@ namespace Voxelis
 
         protected ChunkRenderableBase CreateChunkRenderer(Chunk chunk, Vector3 position, Quaternion rotation)
         {
-            ChunkRenderableBase r = (ChunkRenderableBase)System.Activator.CreateInstance(globalSettings.rendererType);
+            ChunkRenderableBase r = (ChunkRenderableBase)System.Activator.CreateInstance(globalSettings.renderSetup.renderableClass);
 
             r.Init(this, chunk);
-            r.GenerateGeometry(this, chunk);
+
+            // Forced geometry generation
+            chunk.dirty = true;
 
             return r;
         }
@@ -441,6 +505,31 @@ namespace Voxelis
         public static uint GetID(int r, int g, int b, int a)
         {
             return (((uint)r) << 24) + (((uint)g) << 16) + (((uint)b) << 8) + ((uint)a);
+        }
+
+        [ContextMenu("Export Current meshes")]
+        public void ExportCurrentMeshes()
+        {
+            // UNITY WHAT'S WRONG WITH YOU WHY I MUST READ A MESH FROM MAIN THREAD
+            //Parallel.ForEach(renderables, r =>
+            //{
+            //    if (r is ChunkRenderer_CPUOptimMesh)
+            //    {
+            //        (r as ChunkRenderer_CPUOptimMesh).ExportMesh($"ExportedMeshes/Chunk");
+            //    }
+            //});
+
+            foreach (var r in renderables)
+            {
+                if (r is ChunkRenderer_CPUOptimMesh)
+                {
+                    (r as ChunkRenderer_CPUOptimMesh).ExportMesh($"ExportedMeshes/Chunk");
+                }
+            }
+
+            ChunkRenderer_CPUOptimMesh.ExportMeshMaterials("ExportedMeshes/");
+
+            Debug.Log("Export Current Meshes FINISHED");
         }
     }
 }

@@ -13,6 +13,8 @@ namespace Voxelis.Data
         private SerializedObject m_tableObj;
         private BlockRegistryTable table;
 
+        private int texAtlasSize = 64;
+
         private void OnEnable()
         {
             m_tableObj = serializedObject;
@@ -144,15 +146,15 @@ namespace Voxelis.Data
             //    }
             //}
 
-            //Texture2D atlas = new Texture2D(2048, 2048);
-            //var rects = atlas.PackTextures(src.ToArray(), 0, 2048);
+            //Texture2D atlas = new Texture2D(texAtlasSize, texAtlasSize);
+            //var rects = atlas.PackTextures(src.ToArray(), 0, texAtlasSize);
 
             // TODO: WTF (Support multiple pages pls)
             // Don't know how to support multiple pages ... just do this now ;w;
-            //table.BlockTexArray = new Texture2DArray(2048, 2048, 1, TextureFormat.RGBA32, true);
+            //table.BlockTexArray = new Texture2DArray(texAtlasSize, texAtlasSize, 1, TextureFormat.RGBA32, true);
 
             // 1 page only
-            //Texture2D tmp = new Texture2D(2048, 2048);
+            //Texture2D tmp = new Texture2D(texAtlasSize, texAtlasSize);
             //tmp.SetPixels(0, 0, atlas.width, atlas.height, atlas.GetPixels());
             //tmp.Apply();
             //Graphics.CopyTexture(tmp, 0, table.BlockTexArray, 0);
@@ -167,7 +169,7 @@ namespace Voxelis.Data
 
             #endregion
 
-            int texPerSide = (2048 / (int)texLen);
+            int texPerSide = (texAtlasSize / (int)texLen);
             int texPerPage = texPerSide * texPerSide;
             int pages = (int)((pxs - 1) / 4194304) + 1; // ceiling
 
@@ -180,8 +182,8 @@ namespace Voxelis.Data
             int mipCount = 0, _t = texLen;
             while ((_t >>= 1) > 0) { ++mipCount; }
 
-            Texture2D atlas = new Texture2D(2048, 2048, TextureFormat.RGBA32, mipCount, true);
-            table.BlockTexArray = new Texture2DArray(2048, 2048, pages, TextureFormat.RGBA32, mipCount, true);
+            Texture2D atlas = new Texture2D(texAtlasSize, texAtlasSize, TextureFormat.RGBA32, mipCount, true);
+            table.BlockTexArray = new Texture2DArray(texAtlasSize, texAtlasSize, pages, TextureFormat.RGBA32, mipCount, true);
             table.BlockTexArray.filterMode = FilterMode.Point;
 
             foreach (var def in table.blockDefinitions)
@@ -248,6 +250,10 @@ namespace Voxelis.Data
             //    "Save Float32 Texture", "BlockLUT", "asset", "Save Block LookUp Texture"
             //);
             AssetDatabase.CreateAsset(table.BlockLUT, Path.Combine(dir, "BlockLUT.asset"));
+
+            m_tableObj.ApplyModifiedProperties();
+            m_tableObj.Update();
+            EditorUtility.SetDirty(m_tableObj.targetObject);
         }
 
         private void CollectBlockDefinitions()

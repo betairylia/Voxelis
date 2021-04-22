@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Voxelis_ChunkShader_TexArray_GSRaymarch
-  m_Shader: {fileID: 4800000, guid: deede08f772f0494f938dc8651f4956d, type: 3}
+  m_Shader: {fileID: 4800000, guid: 9ff60798e16e0a24ba136785c971970e, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -37,9 +37,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Glossiness: 0
-    - _LOD0: 24
-    - _LOD1: 48
-    - _LOD2: 96
+    - _LOD0: 64
+    - _LOD1: 115
+    - _LOD2: 170
     - _Metallic: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

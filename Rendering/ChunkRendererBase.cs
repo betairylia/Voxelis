@@ -24,4 +24,9 @@ namespace Voxelis.Rendering
         public abstract uint GetVertCount();
         public abstract Chunk GetChunk();
     }
+
+    public interface INeighborAwareChunkRenderable
+    {
+        void GenerateGeometryNeighborAware(BlockGroup group, Chunk chunk, Chunk Xpos, Chunk Xneg, Chunk Ypos, Chunk Yneg, Chunk Zpos, Chunk Zneg);
+    }
 }

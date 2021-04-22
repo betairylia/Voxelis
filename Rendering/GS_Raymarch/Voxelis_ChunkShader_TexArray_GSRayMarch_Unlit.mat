@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_ChunkShader
-  m_Shader: {fileID: 4800000, guid: c8ed158b0e0dab8459e3aac27f0f909c, type: 3}
+  m_Name: Voxelis_ChunkShader_TexArray_GSRayMarch_Unlit
+  m_Shader: {fileID: 4800000, guid: deede08f772f0494f938dc8651f4956d, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -19,6 +19,14 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _BlockLUT:
+        m_Texture: {fileID: 2800000, guid: 8cb68ca2703918f4eac763898b7b6521, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FSTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -29,6 +37,9 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Glossiness: 0
+    - _LOD0: 64
+    - _LOD1: 115
+    - _LOD2: 170
     - _Metallic: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

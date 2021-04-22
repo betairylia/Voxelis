@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_ChunkShader
-  m_Shader: {fileID: 4800000, guid: c8ed158b0e0dab8459e3aac27f0f909c, type: 3}
+  m_Name: tmp
+  m_Shader: {fileID: 4800000, guid: 89eb5779c0f4c164baeb91812f0f9c6c, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -23,13 +23,8 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _MainTexArr:
-        m_Texture: {fileID: 18700000, guid: 9a6861eee6ea78d42ae6bcadd7404fe1, type: 2}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Glossiness: 0
-    - _Metallic: 0
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _LODDistance: 100
+    - _Size: 1
+    m_Colors: []
   m_BuildTextureStacks: []
