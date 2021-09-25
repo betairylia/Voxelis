@@ -166,7 +166,8 @@ namespace Voxelis.Rendering
 
                 UnityEngine.Profiling.Profiler.EndSample();
 
-                int allocSize = 65536;
+                //int allocSize = 65536;
+                int allocSize = 163840;
 
                 if (_ind[0] == 0)
                 {

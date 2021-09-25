@@ -124,7 +124,7 @@ MonoBehaviour:
   blockVariant:
     val: 2412379940
   variantRate:
-    val: 0.025
+    val: 0.012
   noiseScale:
     val: 1
   rawRadius:

@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e73b5acc5a0d834a8186f7bfb10685b, type: 3}
   m_Name: VoxelisSettings
   m_EditorClassIdentifier: 
-  renderSetup: {fileID: 11400000, guid: d77f801c213593546a13fb5e2f89cfbf, type: 2}
+  renderSetup: {fileID: 11400000, guid: 4477b384d8cd03a41bed43d3620ace14, type: 2}
   blockRegistryTable: {fileID: 11400000, guid: 2253a641628653945bdb0dd52d1d2024, type: 2}

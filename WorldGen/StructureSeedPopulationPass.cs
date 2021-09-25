@@ -87,11 +87,12 @@ namespace Voxelis.WorldGen
                         break;
                     case WorldGen.StructureType.MoonFlowerVine:
                         // TODO : just for test
-                        GameObject obj = new GameObject();
-                        Light light = obj.AddComponent<Light>();
-                        light.type = LightType.Point;
-                        light.shadows = LightShadows.None;
-                        light.transform.position = b.center;
+                        //GameObject obj = new GameObject();
+                        //Light light = obj.AddComponent<Light>();
+                        //light.type = LightType.Point;
+                        //light.shadows = LightShadows.None;
+                        //light.transform.position = b.center;
+                        // LMAO RIP my computer
                         break;
 
                     default:

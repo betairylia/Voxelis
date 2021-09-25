@@ -54,7 +54,7 @@ MonoBehaviour:
   stepMax: 4
   dircStrength: 0.65
   connection: 0.4
-  block: 257694721
+  block: 257694753
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
