@@ -4,9 +4,12 @@ using UnityEngine;
 
 namespace WorldGen.WorldSketch
 {
-    [CreateAssetMenu(fileName = "TerracedMountainsTest", menuName = "Sketchers/TerracedMountainsTest")]
-    public class TerracedMountainsTest : WorldSketcher
+    [Serializable]
+    [CreateAssetMenu(fileName = "SillyRiverPlains", menuName = "Sketchers/SillyRiverPlains")]
+    public class SillyRiverPlains : WorldSketcher
     {
+        public int test = 0;
+
         public override SketchResults FillHeightmap(
             int sizeX,
             int sizeY)
@@ -14,12 +17,6 @@ namespace WorldGen.WorldSketch
             var heightMap = new float[sizeX * sizeY];
             var erosionMap = new float[sizeX * sizeY];
             var waterMap = new float[sizeX * sizeY];
-
-            // Mountain / plains mask
-            var isPlains = new FastNoiseLite();
-            isPlains.SetFractalType(FastNoiseLite.FractalType.FBm);
-            isPlains.SetFractalOctaves(2);
-            isPlains.SetFrequency(0.001f);
 
             // noise generators
             var mountain = new FastNoiseLite();
@@ -30,7 +27,7 @@ namespace WorldGen.WorldSketch
             mountain.SetFractalOctaves(5);
             mountain.SetFractalGain(0.5f);
             //mountain.SetFrequency(0.00078f);
-            mountain.SetFrequency(0.008f);
+            mountain.SetFrequency(0.006f);
             mountain.SetFractalLacunarity(2.0f);
 
             // noise generators
@@ -52,7 +49,7 @@ namespace WorldGen.WorldSketch
                 {
                     waterMap[i * sizeY + j] = water.GetNoise(i, j) - 0.85f;
                     float isRiver = Mathf.Max(0.0f, waterMap[i * sizeY + j]) * 10.0f;
-                    heightMap[i * sizeY + j] = mountain.GetNoise(i, j) * isPlains.GetNoise(i, j);
+                    heightMap[i * sizeY + j] = mountain.GetNoise(i, j);
                     minv = Mathf.Min(heightMap[i * sizeY + j], minv);
                     maxv = Mathf.Max(heightMap[i * sizeY + j], maxv);
                 }
@@ -66,24 +63,13 @@ namespace WorldGen.WorldSketch
                 for (int j = 0; j < sizeY; j++)
                 {
                     heightMap[i * sizeY + j] = (heightMap[i * sizeY + j] - minv) / (maxv - minv);
-                    heightMap[i * sizeY + j] *= 0.65f;
-                    //heightMap[i * sizeY + j] -= Mathf.Max(-0.06f, waterMap[i * sizeY + j]) * 0.04f;
+                    heightMap[i * sizeY + j] *= 0.08f;
+                    heightMap[i * sizeY + j] -= Mathf.Max(-0.06f, waterMap[i * sizeY + j]) * 0.04f;
                     heightMap[i * sizeY + j] = Mathf.Max(heightMap[i * sizeY + j], 0.0f) + 0.1f;
                 }
             }
 
-            // backup for erosion map calculation
-            Array.Copy(heightMap, erosionMap, sizeX * sizeY);
-
-            // erosion
-            var erosionDevice = new HydraulicErosionGPU();
-            erosionDevice.Erode(ref heightMap, sizeY); // FIXME: adjust the erosion code for non-square maps
-
-            for (int i = 0; i < sizeX * sizeY; i++)
-            {
-                // positive means the part is raised during erosion step.
-                erosionMap[i] = heightMap[i] - erosionMap[i];
-            }
+            // No erosion is applied
 
             return new SketchResults(new System.Collections.Generic.Dictionary<string, Texture>()
             {

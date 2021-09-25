@@ -33,10 +33,6 @@ namespace Voxelis
 
         private void Awake()
         {
-            GeometryIndependentPass.cs_generation = cs_generation;
-            GeometryIndependentPass.cs_generation_batchsize = cs_generation_batchsize;
-            GeometryIndependentPass.Init();
-
             Material chunkMat = globalSettings.renderSetup.ChunkMaterial;
             ComputeShader cs_chunkMeshPopulator = globalSettings.renderSetup.associatedCS;
 

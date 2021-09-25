@@ -87,9 +87,9 @@ namespace Voxelis.WorldGen
             Init();
             def_world = world;
 
-            if(world.sketchMapTex != null)
+            if(world.sketchResults != null)
             {
-                cs_generation.SetTexture(0, "Sketch", world.sketchMapTex);
+                world.sketchResults.ApplyToComputeShader(cs_generation);
             }
         }
 

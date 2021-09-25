@@ -27,19 +27,14 @@ namespace Voxelis
         bool worldGenerationCRInProgress;
 
         protected ChunkGenerator chunkGenerator;
-        protected IWorldSketcher sketcher;
 
         public Transform groundPlane, capPlane;
-
-        public ComputeShader cs_generation;
-        public int cs_generation_batchsize = 512;
 
         // World Sketch stuffs
         [HideInInspector]
         public bool isSketchReady { get; private set; }
 
-        [HideInInspector]
-        public float[] heightMap;
+        public SketchResults sketchResults;
 
         [HideInInspector]
         public int mapLen;
@@ -56,21 +51,28 @@ namespace Voxelis
         public bool showSketchMesh = true;
         public Material sketchMeshMat;
 
+        protected bool loadFreezed = false;
+
+        [Space]
+        [Header("World Generation")]
+        public bool isMainWorld = false;
+
+        [Space]
+        [SerializeField]
+        protected WorldSketcher sketcher;
         const int worldSketchSize = 1024;
 
+        [Space]
+        [Inherits(typeof(ChunkGenerator))]
+        public TypeReference generatorType;
+        public ComputeShader cs_generation;
+        public int cs_generation_batchsize = 512;
+
+        [Space]
         public Matryoshka.MatryoshkaGraph matryoshkaGraph;
 
         [EnumNamedArray(typeof(WorldGen.StructureType))]
         public Matryoshka.MatryoshkaGraph[] structureGraphs = new Matryoshka.MatryoshkaGraph[8];
-
-        public bool isMainWorld = false;
-        protected bool loadFreezed = false;
-
-        [Inherits(typeof(ChunkGenerator))]
-        public TypeReference generatorType;
-
-        [Inherits(typeof(IWorldSketcher))]
-        public TypeReference sketcherType;
 
         // Start is called before the first frame update
         protected override void Start()
@@ -142,6 +144,12 @@ namespace Voxelis
 
             if(isMainWorld)
             {
+                // Initialize GeometryIndependentPass
+                GeometryIndependentPass.cs_generation = cs_generation;
+                GeometryIndependentPass.cs_generation_batchsize = cs_generation_batchsize;
+                
+                GeometryIndependentPass.Init();
+
                 GeometryIndependentPass.SetWorld(this);
             }
 
@@ -162,41 +170,32 @@ namespace Voxelis
         private void SketchWorld(int seed = -1)
         {
             mapLen = worldSketchSize;
-            heightMap = new float[worldSketchSize * worldSketchSize];
-            float[] erosionMap = new float[worldSketchSize * worldSketchSize];
-            float[] waterMap = new float[worldSketchSize * worldSketchSize];
 
             // Setup computeshaders
             HydraulicErosionGPU.erosion = erosion_cs;
 
             // Generate height maps
-            sketcher = (IWorldSketcher)System.Activator.CreateInstance(sketcherType);
-            sketcher.FillHeightmap(ref heightMap, ref erosionMap, ref waterMap, worldSketchSize, worldSketchSize);
+            sketchResults = sketcher.FillHeightmap(worldSketchSize, worldSketchSize);
             //WorldGen.WorldSketch.SillyRiverPlains.FillHeightmap(ref heightMap, ref erosionMap, ref waterMap, worldSketchSize, worldSketchSize);
 
-            // Create texture
-            sketchMapTex = new Texture2D(worldSketchSize, worldSketchSize, TextureFormat.RGBAFloat, false);
-
-            for (int i = 0; i < worldSketchSize; i++)
+            if(sketchResults.result.TryGetValue("Sketch", out Texture _tmpTex))
             {
-                for (int j = 0; j < worldSketchSize; j++)
+                sketchMapTex = _tmpTex as Texture2D;
+
+                if(sketchMapTex != null)
                 {
-                    sketchMapTex.SetPixel(i, j, new Color(heightMap[i * mapLen + j], erosionMap[i * mapLen + j], waterMap[i * mapLen + j], 0.0f));
+                    if (sketchMinimap)
+                    {
+                        sketchMinimap.texture = sketchMapTex;
+                        sketchMinimap.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, minimapSize);
+                        sketchMinimap.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, minimapSize);
+                    }
+
+                    if (showSketchMesh)
+                    {
+                        ShowSketchMesh();
+                    }
                 }
-            }
-
-            sketchMapTex.Apply();
-
-            if (sketchMinimap)
-            {
-                sketchMinimap.texture = sketchMapTex;
-                sketchMinimap.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, minimapSize);
-                sketchMinimap.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, minimapSize);
-            }
-
-            if (showSketchMesh)
-            {
-                ShowSketchMesh();
             }
         }
 
@@ -205,6 +204,9 @@ namespace Voxelis
 
         Vector3 GetHeightmapPoint(float uvx, float uvy)
         {
+            if(sketchMapTex == null) { return Vector3.zero; }
+
+            // Only used in ShowSketchMesh() so sketchMapTex is not null
             float h = sketchMapTex.GetPixelBilinear(uvx, uvy).r;
             return new Vector3(
                 (uvx - 0.5f) * worldSketchSize * sketchScale,
