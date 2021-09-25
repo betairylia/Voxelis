@@ -11,39 +11,43 @@ namespace Voxelis
     {
         public static int BlockIDCount = 65536;
 
-        public ushort id;
-        public ushort meta;
+        public uint id;
+        public uint meta => id;
 
-        public static Block Empty = new Block() { id = 0, meta = 0 };
+        public static Block Empty = new Block() { id = 0 };
         public static Block FromID(ushort id)
         {
-            return new Block() { id = id, meta = 0 };
+            return new Block() { id = id };
         }
 
         public static Block From32bitColor(uint color)
         {
             // Convert RGBA888 (32bit) to RGBA444 (16bit)
-            ushort color_16 = (ushort)(
-                (ushort)(((color >> 24 & (0x000000FF)) >> 4) << 12) +   /* r */
-                (ushort)(((color >> 16 & (0x000000FF)) >> 4) << 8)  +   /* g */
-                (ushort)(((color >>  8 & (0x000000FF)) >> 4) << 4)   +   /* b */
-                (ushort)(((color       & (0x000000FF)) >> 4))                 /* a */
-            );
+            // ^ Not this
 
-            return new Block() { id = 0xffff, meta = color_16 };
+            //ushort color_16 = (ushort)(
+            //    (ushort)(((color >> 24 & (0x000000FF)) >> 4) << 12) +   /* r */
+            //    (ushort)(((color >> 16 & (0x000000FF)) >> 4) << 8)  +   /* g */
+            //    (ushort)(((color >>  8 & (0x000000FF)) >> 4) << 4)   +   /* b */
+            //    (ushort)(((color       & (0x000000FF)) >> 4))                 /* a */
+            //);
+
+            return new Block() { id = color };
         }
 
         public static Block FromColor(Color color)
         {
             // Convert RGBA888 (32bit) to RGBA444 (16bit)
-            ushort color_16 = (ushort)(
-                (ushort)(color.r * 16) << 12 +   /* r */
-                (ushort)(color.g * 16) << 8 +   /* g */
-                (ushort)(color.b * 16) << 4 +   /* b */
-                (ushort)(color.a * 16)                 /* a */
+            // ^ Not this
+
+            uint color_32 = (uint)(
+                (((uint)(color.r * 255)) << 24) +   /* r */
+                (((uint)(color.g * 255)) << 16) +   /* g */
+                (((uint)(color.b * 255)) << 8) +   /* b */
+                (((uint)(color.a * 255)))                 /* a */
             );
 
-            return new Block() { id = 0xffff, meta = color_16 };
+            return From32bitColor(color_32);
         }
 
         public static bool CanMergeRenderable(Block a, Block b)
@@ -62,8 +66,8 @@ namespace Voxelis
         {
             Block b;
             uint raw = BitConverter.ToUInt32(BitConverter.GetBytes(value), 0);
-            b.id = (ushort)(raw >> 16);
-            b.meta = (ushort)(raw & 0xFFFF);
+            b.id = raw;
+            //b.meta = (ushort)(raw & 0xFFFF);
 
             return b;
         }
@@ -71,13 +75,15 @@ namespace Voxelis
         public bool IsSolid()
         {
             // TODO: Check Block Definitions instead of this.
-            return !(id == 0 || (id == 0xffff && meta == 0));
+            //return !(id == 0 || (id == 0xffff && meta == 0));
+            return ((meta & 0xff) > 0);
         }
 
         public bool IsRenderable()
         {
             // TODO: Check Block Definitions instead of this.
-            return !(id == 0 || (id == 0xffff && meta == 0));
+            //return !(id == 0 || (id == 0xffff && meta == 0));
+            return ((meta & 0xff) > 0);
         }
 
         public override string ToString()

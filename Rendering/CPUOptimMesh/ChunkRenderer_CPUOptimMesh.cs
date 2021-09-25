@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Voxelis.CustomJobs;
 using Voxelis.Data;
-using BlockID = System.UInt16;
+using BlockID = System.UInt32;
 
 namespace Voxelis.Rendering
 {
@@ -694,11 +694,12 @@ namespace Voxelis.Rendering
 
                 Vector2 uv = Vector2.zero;
 
-                if (blk.id == 0xffff)
+                //if (v.block.id == 0xffff)
+                if (true) // All blocks are pure color now
                 {
-                    int r = ((blk.meta >> 12) & 0xf);
-                    int g = ((blk.meta >> 8) & 0xf);
-                    int b = ((blk.meta >> 4) & 0xf);
+                    int r = (int)((blk.meta >> 24) & 0xff);
+                    int g = (int)((blk.meta >> 16) & 0xff);
+                    int b = (int)((blk.meta >> 8) & 0xff);
                     uv.x = ((r * 4 + b / 4) + 0.5f) / 64.0f;
                     uv.y = ((g * 4 + b % 4) + 0.5f) / 64.0f;
                 }

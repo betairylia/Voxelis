@@ -29,15 +29,11 @@ void UnpackVertex(int vertexID, inout AttributesMesh inputMesh)
     
 #ifdef ATTRIBUTES_NEED_COLOR
     Block blk = data.data;
-    uint bid = GetBlockID(blk);
-    uint meta = GetBlockMeta(blk);
+    //uint bid = GetBlockID(blk);
+    //uint meta = GetBlockMeta(blk);
     
-    inputMesh.color = (bid > 0) * half4(
-        float((meta >> 12) & (0x000F)) / 15.0,
-        float((meta >> 8) & (0x000F)) / 15.0,
-        float((meta >> 4) & (0x000F)) / 15.0,
-        float((meta) & (0x000F)) / 15.0
-    );
+    inputMesh.color = ToColor(blk);
+    inputMesh.color.rgb = pow(inputMesh.color.rgb, 2.2);
 #endif
 }
 

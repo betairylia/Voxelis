@@ -103,7 +103,8 @@ namespace Voxelis.Minecraft
 
                                 if(useID)
                                 {
-                                    chunk.SetBlock(pos.x + mc_cx * 16, pos.y, pos.z + mc_cz * 16, new Block() { id = (ushort)blk.ID, meta = chunk.blockData[ix].meta });
+                                    // Broken but well ... RIP minecraft we're going pure color voxels.
+                                    chunk.SetBlock(pos.x + mc_cx * 16, pos.y, pos.z + mc_cz * 16, new Block() { id = (ushort)blk.ID });//, meta = chunk.blockData[ix].meta });
                                 }
                             }
                         }

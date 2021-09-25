@@ -6,9 +6,9 @@ namespace Voxelis.BlockExtras
 {
     public class FineStructure_16 : BlockEntityBase
     {
-        public static ushort[] fixedGeometry;
+        public static uint[] fixedGeometry;
 
-        public ushort[] blockData = new ushort[4096];
+        public uint[] blockData = new uint[4096];
 
         public FineStructure_16(BlockGroup group, Vector3Int pos, Block block) : base(group, pos, block)
         {

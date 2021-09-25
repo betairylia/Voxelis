@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 using Voxelis.Data;
-using BlockID = System.UInt16;
+using BlockID = System.UInt32;
 
 namespace Voxelis.Rendering
 {
@@ -301,11 +301,12 @@ namespace Voxelis.Rendering
 
                 Vector2 uv = Vector2.zero;
 
-                if (v.block.id == 0xffff)
+                //if (v.block.id == 0xffff)
+                if (true) // All blocks are pure color now
                 {
-                    int r = ((v.block.meta >> 12) & 0xf);
-                    int g = ((v.block.meta >> 8) & 0xf);
-                    int b = ((v.block.meta >> 4) & 0xf);
+                    int r = (int)((v.block.meta >> 24) & 0xff);
+                    int g = (int)((v.block.meta >> 16) & 0xff);
+                    int b = (int)((v.block.meta >> 8) & 0xff);
                     uv.x = ((r * 4 + b / 4) + 0.5f) / 64.0f;
                     uv.y = ((g * 4 + b % 4) + 0.5f) / 64.0f;
                 }

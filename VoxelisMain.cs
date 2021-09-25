@@ -62,7 +62,7 @@ namespace Voxelis
                 {
                     holder = new uint[4096];
                 }
-                FineStructure_16.fixedGeometry = new ushort[4096];
+                FineStructure_16.fixedGeometry = new uint[4096];
 
                 if (ReadVoxFileSingle(fileContent, fileSize, holder, voxSize.x, voxSize.y, voxSize.z))
                 {

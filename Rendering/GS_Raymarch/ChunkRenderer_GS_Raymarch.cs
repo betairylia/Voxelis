@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Voxelis.CustomJobs;
 using Voxelis.Data;
-using BlockID = System.UInt16;
+using BlockID = System.UInt32;
 
 namespace Voxelis.Rendering
 {
