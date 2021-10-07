@@ -143,6 +143,8 @@ namespace Voxelis.WorldGen
                 prioredSeeds[p].Add(structureSeed);
             }
 
+            //Debug.Log(chunk.structureDescriptors.Count);
+
             CustomJobs.CustomJob prevPrior = null;
 
             // Run seed tasks with dependencies between priorities

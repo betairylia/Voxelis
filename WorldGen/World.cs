@@ -60,7 +60,7 @@ namespace Voxelis
         [Space]
         [SerializeField]
         protected WorldSketcher sketcher;
-        const int worldSketchSize = 1024;
+        const int worldSketchSize = 256;
 
         [Space]
         [Inherits(typeof(ChunkGenerator))]

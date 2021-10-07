@@ -12,7 +12,6 @@ using BlockID = System.UInt32;
 
 namespace Voxelis.Rendering
 {
-    // REFACTOR PLEASE WT...H
     public class ChunkRenderer_CPUOptimMesh : ChunkRenderableBase, INeighborAwareChunkRenderable
     {
         public static bool MaterialExported = false;
