@@ -107,7 +107,9 @@ public class VoxelRayCast : MonoBehaviour
         }
         if (Input.GetMouseButtonDown(2))
         {
-            Debug.Log($"Block: {world.GetBlock(hit)}");
+            var blk = world.GetBlock(hit);
+            Debug.Log($"Block: {blk}");
+            handblock = blk.id;
         }
     }
 }

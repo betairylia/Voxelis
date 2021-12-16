@@ -70,22 +70,29 @@ namespace WorldGen.WorldSketch
             string baseName = System.IO.Path.GetFileName(pythonFileName);
             string dircName = System.IO.Path.GetDirectoryName(pythonFileName);
 
-            // Invoke python command
-            var proc = pythonInstance.Invoke(
-                $"{baseName} --sizeX {sizeX} --sizeY {sizeY}",
-                prefix: $"cd {dircName} & ");
-            //var proc = Utils.ExternalInvoker.Invoke("dir");
+            try
+            {
+                // Invoke python command
+                var proc = pythonInstance.Invoke(
+                    $"{baseName} --sizeX {sizeX} --sizeY {sizeY}",
+                    prefix: $"cd {dircName} & ");
+                //var proc = Utils.ExternalInvoker.Invoke("dir");
 
 #if UNITY_EDITOR
-            string output = proc.StandardOutput.ReadToEnd();
-            UnityEngine.Debug.Log($"Exec result:\n<color=#cde6c7>{output}</color>");
+                string output = proc.StandardOutput.ReadToEnd();
+                UnityEngine.Debug.Log($"Exec result:\n<color=#cde6c7>{output}</color>");
 
-            string error = proc.StandardError.ReadToEnd();
-            //Encoding consoleCode = proc.StandardError.CurrentEncoding;
-            //error = Encoding.UTF8.GetString(Encoding.Convert(Encoding.UTF8, consoleCode, consoleCode.GetBytes(error)));
-            UnityEngine.Debug.Log($"Exec errors:\n<color=#f8a7a0>{error}</color>");
+                string error = proc.StandardError.ReadToEnd();
+                //Encoding consoleCode = proc.StandardError.CurrentEncoding;
+                //error = Encoding.UTF8.GetString(Encoding.Convert(Encoding.UTF8, consoleCode, consoleCode.GetBytes(error)));
+                UnityEngine.Debug.Log($"Exec errors:\n<color=#f8a7a0>{error}</color>");
 #endif
-            proc.WaitForExit();
+                proc.WaitForExit();
+            }
+            catch(Exception e)
+            {
+                Debug.Log(e);
+            }
 
             // Collect Results
             SketchResults results = new SketchResults();

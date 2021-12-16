@@ -15,10 +15,10 @@ namespace Voxelis.WorldGen
             IStructureGenerator sg = null;
 
             // Use graph if any
-            if (world.structureGraphs[(int)structureSeed.structureType] != null)
+            if (world.worldGenDef.structureGraphs[(int)structureSeed.structureType] != null)
             {
-                b = world.structureGraphs[(int)structureSeed.structureType].GetBounds(structureSeed.worldPos);
-                sg = world.structureGraphs[(int)structureSeed.structureType].NewGenerator();
+                b = world.worldGenDef.structureGraphs[(int)structureSeed.structureType].GetBounds(structureSeed.worldPos);
+                sg = world.worldGenDef.structureGraphs[(int)structureSeed.structureType].NewGenerator();
             }
             else
             {
@@ -31,8 +31,8 @@ namespace Voxelis.WorldGen
                 UnityEngine.Profiling.Profiler.BeginSample("StructureSeedPopulationPass: Matryoshka");
 #endif
                     // Calculate bounds and schedule the job
-                    b = world.matryoshkaGraph.GetBounds(structureSeed.worldPos);
-                    sg = world.matryoshkaGraph.NewGenerator();
+                    b = world.worldGenDef.matryoshkaGraph.GetBounds(structureSeed.worldPos);
+                    sg = world.worldGenDef.matryoshkaGraph.NewGenerator();
 
                     // Run on main thread
                     // world.matryoshkaGraph.NewGenerator().Generate(b, world);

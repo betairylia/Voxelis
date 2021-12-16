@@ -12,7 +12,7 @@ namespace Voxelis
         protected override void SetWorld()
         {
             // Setup generators
-            chunkGenerator = (ChunkGenerator)System.Activator.CreateInstance(generatorType);
+            chunkGenerator = (ChunkGenerator)System.Activator.CreateInstance(typeof(CSGenerator));
             GeometryIndependentPass.SetWorld(this);
 
             GenerateTestStructure();

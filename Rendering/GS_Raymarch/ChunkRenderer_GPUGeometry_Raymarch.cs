@@ -219,12 +219,14 @@ namespace Voxelis.Rendering
             // inputBuffer.SetData(this.chunk.blockData);
 
             int allocSize = (int)(_ind[0] * 1.25) + 1024;
+            //UnityEngine.Debug.Log($"{_ind[0]} | {vCount}");
             //int allocSize = 65536;
             //_ind[0] = 65536;
 
             // Need to extend buffer size
             if (vCount < _ind[0])
             {
+                //UnityEngine.Debug.Log($"{vCount} -> {allocSize}");
                 // Realloc
                 if (buffer != null)
                 {
@@ -234,6 +236,7 @@ namespace Voxelis.Rendering
 
                 // 1.0 - scale factor for potentially more blocks
                 buffer = new ComputeBuffer(allocSize, System.Runtime.InteropServices.Marshal.SizeOf(typeof(Vertex_GR)));
+                vCount = (uint)allocSize;
             }
             else if (_ind[0] == 0)
             {
@@ -247,7 +250,6 @@ namespace Voxelis.Rendering
                 return;
             }
 
-            vCount = (uint)allocSize;
             _ind[0] = 0;
             indBuffer.SetData(_ind);
 

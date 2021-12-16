@@ -52,19 +52,22 @@ namespace Voxelis
         public Material sketchMeshMat;
 
         protected bool loadFreezed = false;
+        protected bool showDebugText = true;
 
         [Space]
         [Header("World Generation")]
         public bool isMainWorld = false;
+        public WorldGeneratorDef worldGenDef;
 
+        /*
         [Space]
         [SerializeField]
         protected WorldSketcher sketcher;
-        const int worldSketchSize = 256;
+        int worldSketchSize = 1024;
 
-        [Space]
-        [Inherits(typeof(ChunkGenerator))]
-        public TypeReference generatorType;
+        //[Space]
+        //[Inherits(typeof(ChunkGenerator))]
+        //public TypeReference generatorType;
         public ComputeShader cs_generation;
         public int cs_generation_batchsize = 512;
 
@@ -73,6 +76,7 @@ namespace Voxelis
 
         [EnumNamedArray(typeof(WorldGen.StructureType))]
         public Matryoshka.MatryoshkaGraph[] structureGraphs = new Matryoshka.MatryoshkaGraph[8];
+        */
 
         // Start is called before the first frame update
         protected override void Start()
@@ -145,8 +149,8 @@ namespace Voxelis
             if(isMainWorld)
             {
                 // Initialize GeometryIndependentPass
-                GeometryIndependentPass.cs_generation = cs_generation;
-                GeometryIndependentPass.cs_generation_batchsize = cs_generation_batchsize;
+                GeometryIndependentPass.cs_generation = worldGenDef.cs_generation;
+                GeometryIndependentPass.cs_generation_batchsize = worldGenDef.cs_generation_batchsize;
                 
                 GeometryIndependentPass.Init();
 
@@ -154,7 +158,8 @@ namespace Voxelis
             }
 
             // Setup generators
-            chunkGenerator = (ChunkGenerator)System.Activator.CreateInstance(generatorType);
+            // FIXME: Now fixed to CSGenerator
+            chunkGenerator = (ChunkGenerator)System.Activator.CreateInstance(typeof(CSGenerator));
 
             for (int i = 0; i < 0; i++)
             //for (int i = 0; i < 64; i++)
@@ -169,13 +174,13 @@ namespace Voxelis
 
         private void SketchWorld(int seed = -1)
         {
-            mapLen = worldSketchSize;
+            mapLen = worldGenDef.worldSketchSize;
 
             // Setup computeshaders
             HydraulicErosionGPU.erosion = erosion_cs;
 
             // Generate height maps
-            sketchResults = sketcher.FillHeightmap(worldSketchSize, worldSketchSize);
+            sketchResults = worldGenDef.sketcher.FillHeightmap(worldGenDef.worldSketchSize, worldGenDef.worldSketchSize);
             //WorldGen.WorldSketch.SillyRiverPlains.FillHeightmap(ref heightMap, ref erosionMap, ref waterMap, worldSketchSize, worldSketchSize);
 
             if(sketchResults.result.TryGetValue("Sketch", out Texture _tmpTex))
@@ -209,9 +214,9 @@ namespace Voxelis
             // Only used in ShowSketchMesh() so sketchMapTex is not null
             float h = sketchMapTex.GetPixelBilinear(uvx, uvy).r;
             return new Vector3(
-                (uvx - 0.5f) * worldSketchSize * sketchScale,
+                (uvx - 0.5f) * worldGenDef.worldSketchSize * sketchScale,
                 h * 256.0f,
-                (uvy - 0.5f) * worldSketchSize * sketchScale
+                (uvy - 0.5f) * worldGenDef.worldSketchSize * sketchScale
                 );
         }
 
@@ -328,8 +333,10 @@ namespace Voxelis
 
             // SUPER HEAVY - FIXME: Optimize it orz
             //RefreshRenderables();
-            if (debugText != null)
+            if (debugText != null && showDebugText)
             {
+                debugText.enabled = true;
+
                 // Get renderable size
                 uint vCount = 0;
                 uint fsCount = 0;
@@ -350,6 +357,8 @@ namespace Voxelis
                     bexCount += (uint)chk.blockExtrasDict.Count;
                 }
 
+                Vector3Int pointerPos = Vector3Int.RoundToInt(follows.GetComponent<VoxelRayCast>().pointed.position);
+
                 debugText.text = $"" +
                     $"CHUNKS:\n" +
                     $"Loaded:   {chunks.Count} ({chunks.Count * sizeof(uint) * 32 / 1024} MB)\n" +
@@ -358,7 +367,8 @@ namespace Voxelis
                     $"          {vCount} verts\n" +
                     $"  - FS16: {fsCount} ({fsBufSize * 2 / 1024} MB)\n" +
                     $"\n" +
-                    $"@ {(int)follows.position.x}, {(int)follows.position.y}, {(int)follows.position.z}\n" +
+                    $"~@ {(int)follows.position.x}, {(int)follows.position.y}, {(int)follows.position.z}\n" +
+                    $"-> {pointerPos.x}, {pointerPos.y}, {pointerPos.z}" +
                     $"\n" +
                     $"FPS: {EMAFPS(1.0f / Time.unscaledDeltaTime).ToString("N1")}\n" +
                     $"Render distance: {showDistance} blocks\n" +
@@ -375,7 +385,12 @@ namespace Voxelis
                     $"\n" +
                     $"[C] - Toggle freeview\n" +
                     $"[V] - Freeze current world\n" +
+                    $"[F3]- Show / Hide Debug Text\n" +
                     $"     (Current = {(loadFreezed ? "FREEZE" : "LOAD")})";
+            }
+            else if(showDebugText == false)
+            {
+                debugText.enabled = false;
             }
 
             // Forced fence placement
@@ -397,6 +412,11 @@ namespace Voxelis
             if(Input.GetKeyDown(KeyCode.V))
             {
                 loadFreezed = !loadFreezed;
+            }
+
+            if(Input.GetKeyDown(KeyCode.F3))
+            {
+                showDebugText = !showDebugText;
             }
         }
 
@@ -616,11 +636,14 @@ namespace Voxelis
 
         private void OnGUI()
         {
-            // Test
-            float _size = GUI.HorizontalSlider(new Rect(340, 10, 800, 30), (float)showDistance, 32.0f, 640.0f);
+            if(showDebugText)
+            {
+                // Test
+                float _size = GUI.HorizontalSlider(new Rect(340, 10, 800, 30), (float)showDistance, 32.0f, 640.0f);
 
-            showDistance = (int)_size;
-            disappearDistance = (int)(_size + 40);
+                showDistance = (int)_size;
+                disappearDistance = (int)(_size + 40);
+            }
         }
     }
 }

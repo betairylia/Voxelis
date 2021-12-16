@@ -6,6 +6,7 @@ public static class Globals
 {
     //public static MonoSingleton<World> world = new MonoSingleton<World>(false);
     public static MonoSingleton<VoxelisMain> voxelisMain = new MonoSingleton<VoxelisMain>(false);
+    public static WorldGeneratorDef defaultWDef;
 }
 
 public static class Settings
