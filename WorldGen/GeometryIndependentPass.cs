@@ -123,6 +123,7 @@ namespace Voxelis.WorldGen
             csgen_blkBuf.Dispose();
             csgen_structureBuf.Dispose();
             csgen_structureCountBuf.Dispose();
+            inited = false;
         }
 
         /// <summary>

@@ -385,6 +385,7 @@ namespace Voxelis
                     $"\n" +
                     $"[C] - Toggle freeview\n" +
                     $"[V] - Freeze current world\n" +
+                    $"[L] - Reload current world\n" +
                     $"[F3]- Show / Hide Debug Text\n" +
                     $"     (Current = {(loadFreezed ? "FREEZE" : "LOAD")})";
             }
@@ -412,6 +413,11 @@ namespace Voxelis
             if(Input.GetKeyDown(KeyCode.V))
             {
                 loadFreezed = !loadFreezed;
+            }
+
+            if(Input.GetKeyDown(KeyCode.L))
+            {
+                Refresh();
             }
 
             if(Input.GetKeyDown(KeyCode.F3))
@@ -643,6 +649,28 @@ namespace Voxelis
 
                 showDistance = (int)_size;
                 disappearDistance = (int)(_size + 40);
+            }
+        }
+
+        public void Refresh()
+        {
+            if (CustomJobs.CustomJob.Count == 0)
+            {
+                foreach (var p in renderables)
+                {
+                    chunks.Remove(p.GetChunk().positionOffset / 32);
+                    p.Clean();
+                }
+                renderables.Clear();
+
+                // TODO: Do this more elegantly
+                Globals.voxelisMain.Instance.Refresh();
+                SetWorld();
+                //UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            }
+            else
+            {
+                Debug.LogError("Preview refresh failed - Unfinished job exists");
             }
         }
     }
