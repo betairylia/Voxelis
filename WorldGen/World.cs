@@ -1,5 +1,5 @@
 ﻿#define PROFILE
-//#define BALL_MOVING_TEST
+#define BALL_MOVING_TEST
 //#define ALLOC_TIME_TEST
 
 using System.Collections;
