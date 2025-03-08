@@ -21,6 +21,7 @@ namespace Voxelis.Rendering
         protected Vector3Int myPos;
 
         public bool populated;
+        protected VoxelisMain _voxelisMain;
 
         public struct Vertex
         {
@@ -40,6 +41,7 @@ namespace Voxelis.Rendering
         public override void Init(BlockGroup group, Chunk chunk)
         {
             this.chunk = chunk;
+            _voxelisMain = group.head;
 
             // Duplicate the material
             // chunkMat = new Material(chunkMat);
@@ -155,20 +157,23 @@ namespace Voxelis.Rendering
         {
             if (buffer != null)
             {
-                buffer.Dispose();
+                // buffer.Dispose();
+                _voxelisMain.DisposeBuffer(buffer);
                 //buffer = null;
                 //Debug.Log("Main buffer released.");
             }
 
             if (indBuffer != null)
             {
-                indBuffer.Dispose();
+                // indBuffer.Dispose();
+                _voxelisMain.DisposeBuffer(indBuffer);
                 //indBuffer = null;
             }
 
             if (inputBuffer != null)
             {
-                inputBuffer.Dispose();
+                // inputBuffer.Dispose();
+                _voxelisMain.DisposeBuffer(inputBuffer);
                 //inputBuffer = null;
             }
 

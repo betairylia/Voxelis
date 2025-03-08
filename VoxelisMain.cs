@@ -12,6 +12,8 @@ namespace Voxelis
     public class VoxelisMain : MonoBehaviour
     {
         List<BlockGroup> allBlockGroups = new List<BlockGroup>();
+        
+        List<ComputeBuffer> computeBuffersToDispose = new List<ComputeBuffer>();
 
         public ComputeShader cs_generation;
         public int cs_generation_batchsize;
@@ -91,6 +93,14 @@ namespace Voxelis
         {
             CustomJobs.CustomJob.UpdateAllJobs();
             GeometryIndependentPass.Update();
+
+            foreach (var buf in computeBuffersToDispose)
+            {
+                if (buf.IsValid())
+                {
+                    buf.Dispose();
+                }
+            }
         }
 
         #region WorldUpdate
@@ -142,6 +152,7 @@ namespace Voxelis
             allBlockGroups.Add(bg);
 
             bg.globalSettings = globalSettings;
+            bg.head = this;
             bg.chunkMat = globalSettings.renderSetup.ChunkMaterial;
             bg.cs_chunkMeshPopulator = globalSettings.renderSetup.associatedCS;
 
@@ -171,6 +182,11 @@ namespace Voxelis
         protected virtual void AssemblyReloadEvents_beforeAssemblyReload()
         {
             ClearAllImmediate();
+        }
+
+        public void DisposeBuffer(ComputeBuffer buffer)
+        {
+            computeBuffersToDispose.Add(buffer);
         }
 
         #endregion
