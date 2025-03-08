@@ -402,7 +402,8 @@ namespace Voxelis.Rendering
 
             if (blockExtraPointers_buffer != null)
             {
-                blockExtraPointers_buffer.Dispose();
+                // blockExtraPointers_buffer.Dispose();
+                _voxelisMain.DisposeBuffer(blockExtraPointers_buffer);
             }
         }
     }

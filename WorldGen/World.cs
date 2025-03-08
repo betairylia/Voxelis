@@ -1,5 +1,6 @@
 ﻿#define PROFILE
-#define BALL_MOVING_TEST
+// #define BALL_MOVING_TEST
+#define FALLING_SAND_TEST
 //#define ALLOC_TIME_TEST
 
 using System.Collections;
@@ -294,10 +295,22 @@ namespace Voxelis
             mesh.triangles = triangles;
         }
 
+        int f = 0;
 #if BALL_MOVING_TEST
         Vector3 _pos;
-        int f = 0;
         float mspd = 0.2f;
+#endif
+#if FALLING_SAND_TEST
+        [SerializeField] private Transform player;
+        [SerializeField] private BoundsInt bounds;
+        static Vector3Int[] offsets = new[]
+        {
+            new Vector3Int(0, -1, 0),
+            new Vector3Int(1, -1, 0),
+            new Vector3Int(-1, -1, 0),
+            new Vector3Int(0, -1, 1),
+            new Vector3Int(0, -1, -1),
+        };
 #endif
         // Update is called once per frame
         protected override void Update()
@@ -328,6 +341,42 @@ namespace Voxelis
                 _pos = new Vector3(Mathf.Sin(mspd * Time.time - 10) * 128.0f, 80, -Mathf.Cos(mspd * Time.time - 10) * 128.0f);
                 (new UglySphere(Block.From32bitColor(0x00ff00ff))).Generate(new BoundsInt(Mathf.FloorToInt(_pos.x), Mathf.FloorToInt(_pos.y), Mathf.FloorToInt(_pos.z), size, size, size), this);
             }
+            f++;
+#endif
+            
+#if FALLING_SAND_TEST
+            if (f % 1 == 0)
+            {
+                Vector3Int playerPos = Vector3Int.RoundToInt(player.position);
+                for (int x = playerPos.x + bounds.min.x; x < playerPos.x + bounds.max.x; x++)
+                {
+                    for (int z = playerPos.z + bounds.min.z; z < playerPos.z + bounds.max.z; z++)
+                    {
+                        // for (int y = playerPos.y + bounds.min.y; y < playerPos.y + bounds.max.y; y++)
+                        for (int y = 1; y < 128; y++)
+                        {
+                            Block b = GetBlock(x, y, z);
+                            if (b.id == 0)
+                            {
+                                continue;
+                            }
+                            
+                            for (int offi = 0; offi < offsets.Length; offi++)
+                            {
+                                Vector3Int offset = offsets[offi];
+                                Block bo = GetBlock(x + offset.x, y + offset.y, z + offset.z);
+                                if (bo.id == 0)
+                                {
+                                    SetBlock(new Vector3Int(x, y, z), bo);
+                                    SetBlock(new Vector3Int(x + offset.x, y + offset.y, z + offset.z), b);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             f++;
 #endif
 

@@ -31,6 +31,8 @@ namespace Voxelis
         [HideInInspector]
         public Voxelis.VoxelisGlobalSettings globalSettings;
 
+        [HideInInspector] public VoxelisMain head;
+
         [HideInInspector]
         public Material chunkMat;
 
@@ -177,7 +179,7 @@ namespace Voxelis
         };
 
         [HideInInspector]
-        public float startTime, budgetMS = 15.0f;
+        public float startTime, budgetMS = 145.0f;
 
         public bool UpdateLoopFinished { get; protected set; }
 

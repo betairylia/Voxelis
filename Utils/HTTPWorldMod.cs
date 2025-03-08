@@ -22,7 +22,7 @@ namespace Voxelis
 
 		private BlockGroup blockGroup;
 
-		void Start()
+		void Initialize()
 		{
 			blockGroup = GetComponent<BlockGroup>();
 
@@ -37,8 +37,14 @@ namespace Voxelis
 			Debug.Log("Server Started");
 		}
 
+		private bool _init = false;
 		void Update()
 		{
+			if (!_init)
+			{
+				_init = true;
+				Initialize();
+			}
 		}
 
         private void OnDisable()

@@ -65,7 +65,10 @@ namespace Voxelis
 
         void Cleanup()
         {
-            blockData.Dispose();
+            if (blockData.IsCreated)
+            {
+                blockData.Dispose();
+            }
         }
 
         public void _PopulateStart(Vector3Int myPos)
@@ -106,7 +109,6 @@ namespace Voxelis
 
         public void SetBlock(int x, int y, int z, Block blk)
         {
-            dirty = true;
             if (x * 32 * 32 + y * 32 + z < 0 || x * 32 * 32 + y * 32 + z > 32767)
             {
                 Debug.LogError("!");
@@ -123,6 +125,11 @@ namespace Voxelis
             //    }
             //}
 
+            int idx = x * 32 * 32 + y * 32 + z;
+            if (blockData[idx].id != blk.id)
+            {
+                dirty = true;
+            }
             blockData[x * 32 * 32 + y * 32 + z] = blk;
 
             // DEBUG
