@@ -282,6 +282,7 @@ Shader "VoxelisHDRP/Lit"
     #pragma shader_feature_local _MATERIAL_FEATURE_SPECULAR_COLOR
 
     #pragma shader_feature_local _ADD_PRECOMPUTED_VELOCITY
+    #pragma multi_compile_fragment AREA_SHADOW_MEDIUM AREA_SHADOW_HIGH
 
     //-------------------------------------------------------------------------------------
     // Define

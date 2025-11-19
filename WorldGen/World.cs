@@ -1,7 +1,7 @@
 ﻿#define PROFILE
 // #define BALL_MOVING_TEST
-#define FALLING_SAND_TEST
-//#define ALLOC_TIME_TEST
+// #define FALLING_SAND_TEST
+// #define ALLOC_TIME_TEST
 
 using System.Collections;
 using System.Collections.Generic;
